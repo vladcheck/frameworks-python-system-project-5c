@@ -27,3 +27,4 @@ def save_data(filename: str, data: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
+        file.write("\n")

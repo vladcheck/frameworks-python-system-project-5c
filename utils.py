@@ -1,6 +1,6 @@
 """Вспомогательные функции безопасного ввода данных."""
 
-from datetime import date
+from datetime import date, datetime
 
 DATE_FORMAT = "%d.%m.%Y"
 
@@ -18,6 +18,7 @@ def input_date(prompt: str) -> date:
     """Запросить у пользователя дату в формате ДД.ММ.ГГГГ."""
     while True:
         try:
-            return date.strptime(input(prompt), DATE_FORMAT)
+            entered = datetime.strptime(input(prompt), DATE_FORMAT)
+            return entered.date()
         except ValueError:
             print("Ошибка: введите дату в формате ДД.ММ.ГГГГ")
