@@ -1,6 +1,6 @@
 from typing import List, NoReturn
 
-from Performance import Performance
+from entities.Performance import Performance
 from api import get_performances, add_new_performance
 
 class Menu:

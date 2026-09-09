@@ -1,6 +1,6 @@
 from typing import List
 
-from User import User
+from entities.User import User
 
 class Performance:
   name: str

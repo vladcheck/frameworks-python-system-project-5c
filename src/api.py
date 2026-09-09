@@ -1,6 +1,6 @@
 from typing import List
 
-from Performance import Performance
+from entities.Performance import Performance
 
 
 performances: List[Performance] = []
