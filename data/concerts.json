@@ -1,0 +1,152 @@
+[
+    {
+        "id": 1,
+        "title": "Клубный вечер с Мейби Бейби",
+        "performer_id": 1,
+        "venue_id": 1,
+        "program_id": 1,
+        "date": "2026-10-15",
+        "expected_guests": 4800,
+        "base_ticket_price": 2500.0
+    },
+    {
+        "id": 2,
+        "title": "Дора: вечер инди",
+        "performer_id": 2,
+        "venue_id": 3,
+        "program_id": 3,
+        "date": "2026-10-22",
+        "expected_guests": 1900,
+        "base_ticket_price": 1800.0
+    },
+    {
+        "id": 3,
+        "title": "ЛСП: большой сольник",
+        "performer_id": 3,
+        "venue_id": 6,
+        "program_id": 4,
+        "date": "2026-11-05",
+        "expected_guests": 7500,
+        "base_ticket_price": 2000.0
+    },
+    {
+        "id": 4,
+        "title": "Мукка: соло-концерт",
+        "performer_id": 4,
+        "venue_id": 2,
+        "program_id": 7,
+        "date": "2026-09-12",
+        "expected_guests": 1700,
+        "base_ticket_price": 1500.0
+    },
+    {
+        "id": 5,
+        "title": "Свидание в Космонавте",
+        "performer_id": 5,
+        "venue_id": 4,
+        "program_id": 3,
+        "date": "2026-08-30",
+        "expected_guests": 1400,
+        "base_ticket_price": 1200.0
+    },
+    {
+        "id": 6,
+        "title": "Буерак: пост-панк ночь",
+        "performer_id": 6,
+        "venue_id": 9,
+        "program_id": 5,
+        "date": "2026-09-20",
+        "expected_guests": 2400,
+        "base_ticket_price": 1300.0
+    },
+    {
+        "id": 7,
+        "title": "Пошлая Молли: панк-вечеринка",
+        "performer_id": 7,
+        "venue_id": 7,
+        "program_id": 6,
+        "date": "2026-09-27",
+        "expected_guests": 2200,
+        "base_ticket_price": 1400.0
+    },
+    {
+        "id": 8,
+        "title": "Мот: золотые хиты",
+        "performer_id": 8,
+        "venue_id": 11,
+        "program_id": 9,
+        "date": "2026-11-14",
+        "expected_guests": 6000,
+        "base_ticket_price": 2500.0
+    },
+    {
+        "id": 9,
+        "title": "Звери в Олимпийском",
+        "performer_id": 9,
+        "venue_id": 10,
+        "program_id": 9,
+        "date": "2026-11-21",
+        "expected_guests": 30000,
+        "base_ticket_price": 1800.0
+    },
+    {
+        "id": 10,
+        "title": "Мумий Тролль: юбилейное шоу",
+        "performer_id": 10,
+        "venue_id": 10,
+        "program_id": 2,
+        "date": "2026-12-05",
+        "expected_guests": 28000,
+        "base_ticket_price": 2000.0
+    },
+    {
+        "id": 11,
+        "title": "Дайте танк (!): нео-панк шоу",
+        "performer_id": 11,
+        "venue_id": 5,
+        "program_id": 10,
+        "date": "2026-10-10",
+        "expected_guests": 1000,
+        "base_ticket_price": 1100.0
+    },
+    {
+        "id": 12,
+        "title": "Аигел: трип-хоп сессия",
+        "performer_id": 12,
+        "venue_id": 8,
+        "program_id": 8,
+        "date": "2026-10-17",
+        "expected_guests": 1400,
+        "base_ticket_price": 1600.0
+    },
+    {
+        "id": 13,
+        "title": "Мейби Бейби в Питере",
+        "performer_id": 1,
+        "venue_id": 3,
+        "program_id": 1,
+        "date": "2026-10-29",
+        "expected_guests": 2000,
+        "base_ticket_price": 2500.0
+    },
+    {
+        "id": 14,
+        "title": "Аигел: ночной сет",
+        "performer_id": 12,
+        "venue_id": 2,
+        "program_id": 8,
+        "date": "2026-12-03",
+        "expected_guests": 1700,
+        "base_ticket_price": 1600.0
+    },
+    {
+        "id": 15,
+        "title": "Звери: акустика",
+        "performer_id": 9,
+        "venue_id": 5,
+        "program_id": 7,
+        "date": "2026-09-19",
+        "expected_guests": 1000,
+        "base_ticket_price": 1500.0
+    }
+]
