@@ -1,0 +1,10 @@
+[project]
+name = "frameworks-python-system-project-3c"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+dependencies = [
+    "django>=6.1.1",
+]
