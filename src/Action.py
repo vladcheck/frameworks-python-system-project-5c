@@ -6,7 +6,7 @@ class Action:
     description: str
     execute: FunctionType
 
-    def __init__(self,text,description,execute) -> None:
+    def __init__(self, text, description, execute) -> None:
         self.text = text
         self.description = description
         self.execute = execute

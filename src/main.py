@@ -2,9 +2,9 @@ from Action import Action
 from Menu import Menu
 
 actions = [
-    Action("0","Выйти из приложения", Menu.menu_exit),
-    Action("1","Получить список выступлений", Menu.menu_get_performances),
-    Action("2","Создать выступление", Menu.menu_create_performance)
+    Action("0", "Выйти из приложения", Menu.menu_exit),
+    Action("1", "Получить список выступлений", Menu.menu_get_performances),
+    Action("2", "Создать выступление", Menu.menu_create_performance)
 ]
 
 
@@ -13,6 +13,7 @@ def print_menu():
     for act in actions:
         print(f"{act.text}. {act.description.capitalize()}")
     print()
+
 
 def main() -> None:
     while True:

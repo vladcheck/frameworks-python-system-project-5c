@@ -1,3 +1,3 @@
 class User:
-  name: str
-  email: str
+    name: str
+    email: str
