@@ -46,5 +46,7 @@ def test_sort_venues_by_capacity() -> None:
 
 def test_get_venue_by_id() -> None:
     venues = make_venues()
-    assert get_venue_by_id(venues, 1)["name"] == "Космонавт"
+    venue = get_venue_by_id(venues, 1)
+    assert venue is not None
+    assert venue["name"] == "Космонавт"
     assert get_venue_by_id(venues, 99) is None
