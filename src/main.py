@@ -46,5 +46,5 @@ def main() -> None:
     save_all_data(*data)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

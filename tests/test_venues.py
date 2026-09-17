@@ -1,5 +1,7 @@
 """Тесты класса Venue и функций работы с площадками."""
 
+import pytest
+
 from src.models import Venue
 from src.models.venues import (
     add_venue,
@@ -33,9 +35,15 @@ def test_venue_is_suitable_for() -> None:
     assert not venue.is_suitable_for(1501)
 
 
+def test_venue_is_suitable_for_zero_guests() -> None:
+    venue = Venue(1, "Космонавт", "Санкт-Петербург", 1500)
+    assert venue.is_suitable_for(0)
+
+
 def test_venue_validate_capacity() -> None:
     assert Venue.validate_capacity(100)
     assert not Venue.validate_capacity(0)
+    assert not Venue.validate_capacity(-10)
 
 
 def test_venue_from_data() -> None:
@@ -45,11 +53,22 @@ def test_venue_from_data() -> None:
     assert venue.to_data() == data
 
 
+def test_venue_from_data_missing_key() -> None:
+    with pytest.raises(KeyError):
+        Venue.from_data({"id": 1, "name": "Космонавт"})
+
+
 def test_add_venue() -> None:
     venues = make_venues()
     assert len(venues) == 2
     assert venues[0].id == 1
     assert venues[1].id == 2
+
+
+def test_add_venue_continues_max_id() -> None:
+    venues = [Venue(7, "А", "Москва", 100)]
+    venue = add_venue(venues, "Б", "Санкт-Петербург", 200)
+    assert venue.id == 8
 
 
 def test_find_venues() -> None:
@@ -59,6 +78,16 @@ def test_find_venues() -> None:
     assert found[0].name == "Космонавт"
 
 
+def test_find_venues_no_match() -> None:
+    venues = make_venues()
+    assert find_venues(venues, "олимпийский") == []
+
+
+def test_find_venues_empty_query_returns_all() -> None:
+    venues = make_venues()
+    assert len(find_venues(venues, "")) == 2
+
+
 def test_filter_venues_by_capacity() -> None:
     venues = make_venues()
     filtered = filter_venues_by_capacity(venues, 2000)
@@ -66,10 +95,25 @@ def test_filter_venues_by_capacity() -> None:
     assert filtered[0].name == "Adrenaline Stadium"
 
 
+def test_filter_venues_by_capacity_exact_match() -> None:
+    venues = make_venues()
+    filtered = filter_venues_by_capacity(venues, 1500)
+    assert len(filtered) == 2
+
+
+def test_filter_venues_by_capacity_too_large() -> None:
+    venues = make_venues()
+    assert filter_venues_by_capacity(venues, 10000) == []
+
+
 def test_sort_venues_by_capacity() -> None:
     venues = make_venues()
     sorted_venues = sort_venues_by_capacity(venues)
     assert sorted_venues[0].capacity == 1500
+
+
+def test_sort_venues_by_capacity_empty() -> None:
+    assert sort_venues_by_capacity([]) == []
 
 
 def test_get_venue_by_id() -> None:
