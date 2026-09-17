@@ -93,6 +93,8 @@
 - `src/utils.py` — безопасный ввод чисел и дат;
 - `src/settings.py` — настройки окружения;
 - `data/` — JSON-файлы данных (performers, venues, programs, concerts);
+- `data/originals/` — эталонные копии данных для восстановления
+  после тестирования (`make restore-data` или `cp data/originals/*.json data/`);
 - `tests/` — автоматизированные тесты pytest;
 - `tools/` — вспомогательные скрипты (извлечение текста из PDF).
 

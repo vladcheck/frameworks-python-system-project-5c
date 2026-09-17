@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "name": "Adrenaline Stadium",
+        "city": "Москва",
+        "capacity": 5000
+    },
+    {
+        "id": 2,
+        "name": "Главclub Green Concert",
+        "city": "Москва",
+        "capacity": 1800
+    },
+    {
+        "id": 3,
+        "name": "A2 Green Concert",
+        "city": "Санкт-Петербург",
+        "capacity": 2000
+    },
+    {
+        "id": 4,
+        "name": "Космонавт",
+        "city": "Санкт-Петербург",
+        "capacity": 1500
+    },
+    {
+        "id": 5,
+        "name": "Известия Hall",
+        "city": "Москва",
+        "capacity": 1100
+    },
+    {
+        "id": 6,
+        "name": "Stadium Live",
+        "city": "Москва",
+        "capacity": 8000
+    },
+    {
+        "id": 7,
+        "name": "Aurora Concert Hall",
+        "city": "Санкт-Петербург",
+        "capacity": 2300
+    },
+    {
+        "id": 8,
+        "name": "Yotaspace",
+        "city": "Москва",
+        "capacity": 1500
+    },
+    {
+        "id": 9,
+        "name": "1930 Moscow",
+        "city": "Москва",
+        "capacity": 2500
+    },
+    {
+        "id": 10,
+        "name": "СК Олимпийский",
+        "city": "Москва",
+        "capacity": 35000
+    },
+    {
+        "id": 11,
+        "name": "Crocus City Hall",
+        "city": "Москва",
+        "capacity": 6200
+    },
+    {
+        "id": 12,
+        "name": "Телеклуб",
+        "city": "Екатеринбург",
+        "capacity": 1000
+    }
+]

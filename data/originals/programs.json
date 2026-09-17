@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "name": "MAYDAY: клубный сет",
+        "duration": 90,
+        "age_limit": 16
+    },
+    {
+        "id": 2,
+        "name": "Хиты Мумий Тролль",
+        "duration": 120,
+        "age_limit": 12
+    },
+    {
+        "id": 3,
+        "name": "Вечер инди-рока",
+        "duration": 100,
+        "age_limit": 12
+    },
+    {
+        "id": 4,
+        "name": "Рэп-симфония",
+        "duration": 110,
+        "age_limit": 18
+    },
+    {
+        "id": 5,
+        "name": "Пост-панк ночь",
+        "duration": 105,
+        "age_limit": 16
+    },
+    {
+        "id": 6,
+        "name": "Панк-вечеринка",
+        "duration": 95,
+        "age_limit": 16
+    },
+    {
+        "id": 7,
+        "name": "Акустический вечер",
+        "duration": 80,
+        "age_limit": 6
+    },
+    {
+        "id": 8,
+        "name": "Трип-хоп сессия",
+        "duration": 85,
+        "age_limit": 18
+    },
+    {
+        "id": 9,
+        "name": "Золотые хиты 2000-х",
+        "duration": 115,
+        "age_limit": 12
+    },
+    {
+        "id": 10,
+        "name": "Нео-панк шоу",
+        "duration": 90,
+        "age_limit": 16
+    },
+    {
+        "id": 11,
+        "name": "Электро-рейв",
+        "duration": 100,
+        "age_limit": 18
+    },
+    {
+        "id": 12,
+        "name": "Семейный концерт",
+        "duration": 75,
+        "age_limit": 0
+    }
+]
