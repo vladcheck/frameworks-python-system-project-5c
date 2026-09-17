@@ -1,6 +1,6 @@
 """Тесты классов Performer и Program."""
 
-from models import Performer, Program
+from src.models import Performer, Program
 
 
 def test_performer_creation() -> None:

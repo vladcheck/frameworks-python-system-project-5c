@@ -2,8 +2,8 @@
 
 from datetime import date
 
-from models import Concert, Venue
-from models.concerts import (
+from src.models import Concert, Venue
+from src.models.concerts import (
     add_concert,
     cancel_concert,
     find_concerts,
@@ -11,15 +11,15 @@ from models.concerts import (
     is_venue_available,
     sort_concerts_by_date,
 )
-from models.performers import get_performer_by_id
-from models.programs import get_program_by_id
-from models.venues import (
+from src.models.performers import get_performer_by_id
+from src.models.programs import get_program_by_id
+from src.models.venues import (
     filter_venues_by_capacity,
     find_venues,
     get_venue_by_id,
     sort_venues_by_capacity,
 )
-from utils import input_date, input_int
+from src.utils import input_date, input_int
 
 MENU = """=== Система учета концертных выступлений ===
 

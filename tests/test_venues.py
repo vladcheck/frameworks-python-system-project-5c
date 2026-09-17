@@ -1,7 +1,7 @@
 """Тесты класса Venue и функций работы с площадками."""
 
-from models import Venue
-from models.venues import (
+from src.models import Venue
+from src.models.venues import (
     add_venue,
     filter_venues_by_capacity,
     find_venues,

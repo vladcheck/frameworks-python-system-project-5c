@@ -2,8 +2,8 @@
 
 from datetime import date
 
-from models import Concert, Performer, Program, Venue
-from models.concerts import (
+from src.models import Concert, Performer, Program, Venue
+from src.models.concerts import (
     add_concert,
     cancel_concert,
     get_concert_by_id,

@@ -8,7 +8,7 @@ JSON используется для хранения данных, объект
 import json
 from pathlib import Path
 
-from models import Concert, Performer, Program, Venue
+from src.models import Concert, Performer, Program, Venue
 
 
 def _load_json(filename: str) -> list[dict]:

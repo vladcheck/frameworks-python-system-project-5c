@@ -4,9 +4,9 @@
 запускает меню и сохраняет изменения в JSON-файлы.
 """
 
-import storage
-from menu import run_menu
-from models import Concert, Performer, Program, Venue
+from src import storage
+from src.menu import run_menu
+from src.models import Concert, Performer, Program, Venue
 
 DATA_DIR = "data/"
 PERFORMERS_FILE = DATA_DIR + "performers.json"
