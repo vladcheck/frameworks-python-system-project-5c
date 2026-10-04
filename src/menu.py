@@ -1,6 +1,7 @@
 """Консольное меню приложения «Система учета концертных выступлений»."""
 
 from datetime import date
+from typing import Callable
 
 from src.models import Concert, Venue
 from src.models.concerts import (
@@ -156,7 +157,9 @@ def menu_statistics(data: tuple[list, ...]) -> None:
     print(f"Ожидается зрителей: {statistics['total_guests']}")
 
 
-ACTIONS = {
+Action = Callable[..., None]
+
+ACTIONS: dict[str, Action] = {
     "1": menu_show_concerts,
     "2": menu_find_concert,
     "3": menu_show_venues,

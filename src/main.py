@@ -7,22 +7,24 @@
 from src import storage
 from src.menu import run_menu
 from src.models import Concert, Performer, Program, Venue
+from pathlib import Path
 
-DATA_DIR = "data/"
-PERFORMERS_FILE = DATA_DIR + "performers.json"
-VENUES_FILE = DATA_DIR + "venues.json"
-PROGRAMS_FILE = DATA_DIR + "programs.json"
-CONCERTS_FILE = DATA_DIR + "concerts.json"
+DATA = Path("data")
+PERFORMERS_FILE: str = str(DATA.joinpath("performers.join"))
+VENUES_FILE: str = str(DATA.joinpath("venues.json"))
+PROGRAMS_FILE: str = str(DATA.joinpath("programs.json"))
+CONCERTS_FILE: str = str(DATA.joinpath("concerts.json"))
 
 
 def load_all_data() -> tuple[
     list[Performer], list[Venue], list[Program], list[Concert]
 ]:
     """Загрузить все данные проекта и создать объекты."""
-    performers = storage.load_performers(PERFORMERS_FILE)
-    venues = storage.load_venues(VENUES_FILE)
-    programs = storage.load_programs(PROGRAMS_FILE)
-    concerts = storage.load_concerts(CONCERTS_FILE, performers, venues, programs)
+    performers: list[Performer] = storage.load_performers(PERFORMERS_FILE)
+    venues: list[Venue] = storage.load_venues(VENUES_FILE)
+    programs: list[Program] = storage.load_programs(PROGRAMS_FILE)
+    concerts: list[Concert] = storage.load_concerts(
+        CONCERTS_FILE, performers, venues, programs)
     return performers, venues, programs, concerts
 
 
@@ -41,7 +43,8 @@ def save_all_data(
 
 def main() -> None:
     """Точка входа: загрузка данных, меню, сохранение."""
-    data = load_all_data()
+    data: tuple[list[Performer], list[Venue],
+                list[Program], list[Concert]] = load_all_data()
     run_menu(data)
     save_all_data(*data)
 
