@@ -15,4 +15,4 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.coverage.run]
-omit = ["src/settings.py"]
+omit = ["src/settings.py", "concerty/asgi.py", "concerty/wsgi.py"]
