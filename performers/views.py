@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from django.http import HttpRequest, HttpResponse
 
-# Create your views here.
+
+def performers(request: HttpRequest):
+    return HttpResponse("Список выступающих")
+
+
+def performer_detail(request: HttpRequest, performer_id: int):
+    return HttpResponse(f"Выступающий {performer_id}")

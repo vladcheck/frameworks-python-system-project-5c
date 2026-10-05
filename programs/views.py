@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from django.http import HttpRequest, HttpResponse
 
-# Create your views here.
+
+def programs(request: HttpRequest):
+    return HttpResponse("Список программ")
+
+
+def program_detail(request: HttpRequest, program_id: int):
+    return HttpResponse(f"Программа {program_id}")
