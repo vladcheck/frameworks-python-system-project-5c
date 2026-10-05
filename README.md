@@ -143,6 +143,14 @@ pytest
 flake8
 ```
 
+## Django
+
+### Запуск
+
+```bash
+uv run python manage.py runserver
+```
+
 ## План развития
 
 На следующих этапах планируется:

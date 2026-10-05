@@ -1,5 +1,5 @@
 """
-URL configuration for concert_system project.
+URL configuration for concerty project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -25,3 +25,5 @@ urlpatterns = [
     path("performers/", include("performers.urls")),
     path("programs/", include("programs.urls")),
 ]
+
+handler404 = "homepage.views.page_not_found"
