@@ -1,0 +1,10 @@
+<article class="card concert-card">
+    <div class="card-body">
+        <h5 class="card-title">{{ concert.title|default:"Без названия" }}</h5>
+        <p class="card-text">Дата: {{ concert.date|date:"d.m.Y" }}</p>
+        <p class="card-text">Исполнитель: {{ concert.performer.name }}</p>
+        <p class="card-text">Площадка: {{ concert.venue.name }}</p>
+        {% include "concerts/includes/concert_status.html" %}
+        <a href="{% url 'concerts:concert_detail' concert.id %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</article>

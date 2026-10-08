@@ -1,0 +1,5 @@
+{% if concert.is_cancelled %}
+<span class="badge bg-secondary concert-status">Отменено</span>
+{% else %}
+<span class="badge bg-success concert-status">{{ status|default:"Активно" }}</span>
+{% endif %}

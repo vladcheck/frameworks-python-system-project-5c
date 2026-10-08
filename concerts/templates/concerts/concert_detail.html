@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{% if concert %}{{ concert.title }} – Concerty{% else %}Концерт не найден{% endif %}{% endblock %}
+
+{% block content %}
+{% if concert %}
+<div class="card">
+    <div class="card-body">
+        <h1 class="card-title">{{ concert.title|default:"Без названия" }}</h1>
+        <p class="card-text"><strong>ID:</strong> {{ concert.id }}</p>
+        <p class="card-text">Исполнитель: {{ concert.performer.name }} ({{ concert.performer.genre }})</p>
+        <p class="card-text">Площадка: {{ concert.venue.name }}, {{ concert.venue.city }}</p>
+        <p class="card-text">Программа: {{ concert.program.name }} ({{ concert.program.duration }} мин, {{ concert.program.age_limit }}+)</p>
+        <p class="card-text">Дата: {{ concert.date|date:"d.m.Y" }}</p>
+        <p class="card-text">Ожидается: {{ concert.expected_guests }} зрителей</p>
+        <p class="card-text">Цена билета: {{ ticket_price }} руб.</p>
+        <p class="card-text">Ожидаемая выручка: {{ revenue }} руб.</p>
+        <p class="card-text">{{ venue_fit }}</p>
+        <p class="card-text">Статус: {% include "concerts/includes/concert_status.html" %}</p>
+        <a href="{% url 'concerts:concerts' %}" class="btn btn-outline-secondary">← к списку концертов</a>
+    </div>
+</div>
+{% else %}
+<h1 class="text-danger">Концерт не найден</h1>
+<a href="{% url 'concerts:concerts' %}" class="btn btn-outline-secondary">← к списку концертов</a>
+{% endif %}
+{% endblock %}

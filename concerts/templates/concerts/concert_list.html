@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Концерты – Concerty{% endblock %}
+
+{% block content %}
+<h1>Концерты</h1>
+<p>Всего концертов: {{ concerts|length }}</p>
+{% for concert in concerts %}
+{% include "concerts/includes/concert_card.html" %}
+{% empty %}
+<p>Концерты не найдены.</p>
+{% endfor %}
+{% endblock %}
