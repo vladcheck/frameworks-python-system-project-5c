@@ -1,10 +1,10 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 
 
 def page(title: str, content: str) -> str:
     bootstrap = (
-        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3"
-        "/dist/css/bootstrap.min.css"
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     )
     return f"""<!DOCTYPE html>
 <html lang="ru">
@@ -29,25 +29,8 @@ scale=1">
 
 
 def page_not_found(request, exception):
-    content = """
-    <h1 class="text-danger">404 – страница не найдена</h1>
-    <p>Проверьте адрес или вернитесь на главную.</p>
-    <a href="/" class="btn btn-primary">На главную</a>
-    """
-    return HttpResponse(
-        page("404 – страница не найдена", content),
-        status=404,
-    )
+    return render(request, "404.html", status=404)
 
 
 def index(request):
-    content = """
-    <h1 class="display-4">Concerty</h1>
-    <p class="lead">Система бронирования концертных помещений.</p>
-    <p>Основные разделы:</p>
-    <a href="/venues/" class="btn btn-primary me-2">Концертные площадки</a>
-    <a href="/performers/" class="btn btn-primary me-2">Исполнители</a>
-    <a href="/programs/" class="btn btn-primary me-2">Программы</a>
-    <a href="/concerts/" class="btn btn-primary me-2">Концерты</a>
-    """
-    return HttpResponse(page("Concerty", content))
+    return render(request, "homepage/index.html")

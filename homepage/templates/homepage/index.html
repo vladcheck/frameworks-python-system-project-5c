@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Главная – Concerty{% endblock %}
+
+{% block content %}
+<h1 class="display-4">Concerty</h1>
+<p class="lead">Система бронирования концертных помещений.</p>
+<p>Основные разделы:</p>
+<a href="{% url 'venues:venues' %}" class="btn btn-primary me-2">Концертные площадки</a>
+<a href="{% url 'performers:performers' %}" class="btn btn-primary me-2">Исполнители</a>
+<a href="{% url 'programs:programs' %}" class="btn btn-primary me-2">Программы</a>
+<a href="{% url 'concerts:concerts' %}" class="btn btn-primary me-2">Концерты</a>
+{% endblock %}
