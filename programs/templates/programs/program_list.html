@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Программы – Concerty{% endblock %}
+{% block content %}
+<h1>Программы</h1>
+<p>Всего программ: {{ programs|length }}</p>
+<ul class="list-group">
+{% for program in programs %}
+{% include "programs/includes/program_card.html" %}
+{% empty %}
+<li class="list-group-item">Программы не найдены.</li>
+{% endfor %}
+</ul>
+{% endblock %}

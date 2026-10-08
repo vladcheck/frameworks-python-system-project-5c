@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% if program %}{{ program.name|default:"Без названия" }} – Concerty{% else %}Программа не найдена{% endif %}{% endblock %}
+{% block content %}
+{% if program %}
+<div class="card">
+<div class="card-body">
+<h5 class="card-title">{{ program.name|default:"Без названия" }}</h5>
+<p class="card-text"><strong>ID:</strong> {{ program.id }}</p>
+<p class="card-text"><strong>Продолжительность:</strong> {{ program.duration }} мин</p>
+<p class="card-text"><strong>Возрастное ограничение:</strong> {{ program.age_limit }}+</p>
+<h6>Концерты с программой:</h6>
+<ul class="list-group mb-3">
+{% for c in related %}
+<li class="list-group-item"><a href="{% url 'concerts:concert_detail' c.id %}">{{ c.title }} — {{ c.date }}</a></li>
+{% empty %}
+<li class="list-group-item">Нет концертов</li>
+{% endfor %}
+</ul>
+<a href="{% url 'programs:programs' %}" class="btn btn-outline-secondary">← к списку программ</a>
+</div>
+</div>
+{% else %}
+<h1 class="text-danger">Программа не найдена</h1>
+<a href="{% url 'programs:programs' %}" class="btn btn-outline-secondary">← к списку программ</a>
+{% endif %}
+{% endblock %}

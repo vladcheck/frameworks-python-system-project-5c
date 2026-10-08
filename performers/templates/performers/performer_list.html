@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Исполнители – Concerty{% endblock %}
+{% block content %}
+<h1>Исполнители</h1>
+<p>Всего исполнителей: {{ performers|length }}</p>
+<ul class="list-group">
+{% for performer in performers %}
+{% include "performers/includes/performer_card.html" %}
+{% empty %}
+<li class="list-group-item">Исполнители не найдены.</li>
+{% endfor %}
+</ul>
+{% endblock %}

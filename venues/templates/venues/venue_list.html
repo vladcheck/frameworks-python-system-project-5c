@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Площадки – Concerty{% endblock %}
+{% block content %}
+<h1>Площадки</h1>
+<p>Всего площадок: {{ venues|length }}</p>
+<ul class="list-group">
+{% for venue in venues %}
+{% include "venues/includes/venue_card.html" %}
+{% empty %}
+<li class="list-group-item">Площадки не найдены.</li>
+{% endfor %}
+</ul>
+{% endblock %}
