@@ -135,9 +135,10 @@ uv sync
 python -m src.main
 ```
 
-Веб-версия (Django, ПР5):
+Веб-версия, фронтенд (Django + шаблоны, ПР5–ПР6):
 
 ```bash
+uv sync
 uv run python manage.py migrate
 uv run python manage.py runserver
 ```
@@ -147,6 +148,16 @@ uv run python manage.py runserver
 ```text
 http://127.0.0.1:8000/
 ```
+
+Доступные страницы фронтенда: `/` (главная), `/concerts/`,
+`/concerts/<id>/`, `/venues/`, `/venues/<id>/`, `/performers/`,
+`/performers/<id>/`, `/programs/`, `/programs/<id>/`.
+Несуществующие адреса и идентификаторы возвращают страницу 404.
+Собственные стили, скрипты и логотип лежат в
+`homepage/static/homepage/` (`css/style.css`, `js/main.js`,
+`img/logo.png`) и подключаются через `{% static %}` —
+отдельная сборка фронтенда не требуется, достаточно запущенного
+`runserver` в режиме `DEBUG=True`.
 
 ## Страницы веб-интерфейса (ПР6)
 
