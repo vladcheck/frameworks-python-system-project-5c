@@ -116,7 +116,8 @@ JSON-файлы не содержат сведений о внутренней �
 ## Требования
 
 - Python 3.13+;
-- Django 5.2 (веб-интерфейс, ПР5);
+- Django 5.2 (веб-интерфейс, ПР5–ПР6);
+- Django Template Language (шаблоны, ПР6);
 - pytest (тесты);
 - flake8 (проверка качества кода).
 
@@ -147,40 +148,66 @@ uv run python manage.py runserver
 http://127.0.0.1:8000/
 ```
 
-## Страницы веб-интерфейса (ПР5)
+## Страницы веб-интерфейса (ПР6)
 
 - `/` — главная страница: описание приложения и навигация
-  (view-функция `index()`, приложение `homepage`);
+  (view-функция `index()`, приложение `homepage`, шаблон
+  `homepage/templates/homepage/index.html`);
 - `/concerts/` — список концертов из `data/concerts.json`
-  (view-функция `concerts()`);
+  (view-функция `concerts()`, шаблон `concert_list.html`,
+  карточка `includes/concert_card.html`, счётчик `{{ concerts|length }}`);
 - `/concerts/<int:concert_id>/` — страница концерта:
-  исполнитель, площадка, программа, дата, цена билета
-  (`calculate_ticket_price()`), ожидаемая выручка
-  (`calculate_revenue()`), проверка вместимости
-  (`check_venue_fit()`), статус (`get_status()`)
+  исполнитель, площадка, программа, дата (`{{ concert.date|date:"d.m.Y" }}`),
+  цена билета (`calculate_ticket_price()`), ожидаемая выручка
+  (`calculate_revenue()`), проверка вместимости (`check_venue_fit()`),
+  статус (`get_status()`, фрагмент `includes/concert_status.html`)
   (view-функция `concert_detail()`);
 - `/venues/` — список площадок из `data/venues.json`
-  (view-функция `venues()`);
+  (view-функция `venues()`, шаблон `venue_list.html`,
+  карточка `includes/venue_card.html`);
 - `/venues/<int:venue_id>/` — страница площадки + проверка
   доступности на текущую дату (`is_venue_available()`)
   и связанные концерты (view-функция `venue_detail()`);
 - `/performers/` — список исполнителей
-  (view-функция `performers()`);
+  (view-функция `performers()`, карточка `includes/performer_card.html`);
 - `/performers/<int:performer_id>/` — страница исполнителя
   и связанные концерты (view-функция `performer_detail()`);
 - `/programs/` — список программ
-  (view-функция `programs()`);
+  (view-функция `programs()`, карточка `includes/program_card.html`);
 - `/programs/<int:program_id>/` — страница программы
   и связанные концерты (view-функция `program_detail()`).
 
 Если концерт, площадка, исполнитель или программа с указанным
-идентификатором не найдены, страница возвращает код статуса 404.
+идентификатором не найдены, страница возвращает код статуса 404
+(`status=404 if ... is None else 200`, ветка `{% else %}` в шаблоне).
 Для несуществующих адресов настроен обработчик `handler404`
-(`homepage.views.page_not_found`).
+(`homepage.views.page_not_found`, шаблон `templates/404.html`).
 
-Каркас страниц — функция `page()` в `homepage/views.py`
-(кодировка, заголовок вкладки, Bootstrap 5.3 через CDN, навигация).
-В следующей работе каркас будет заменен шаблоном `base.html`.
+Представления готовят данные и передают их в шаблоны через контекст
+(`render(request, "имя_шаблона.html", context)`).
+Генерация HTML в Python-коде веб-представлений не используется,
+функция `page()` из ПР5 удалена.
+
+## Шаблоны (ПР6)
+
+- базовый шаблон `templates/base.html` (блоки `title` и `content`,
+  Bootstrap 5.3 через CDN, собственный CSS, логотип, навигация,
+  подвал с текущим годом через `main.js`);
+- наследование: дочерние шаблоны через `{% extends "base.html" %}`;
+- навигация вынесена в `templates/includes/navigation.html`
+  (ссылки только через `{% url %}`, жёстких адресов нет);
+- повторяющиеся фрагменты — включаемые шаблоны:
+  `concert_card.html`, `concert_status.html`, `venue_card.html`,
+  `performer_card.html`, `program_card.html`;
+- циклы `{% for ... %}{% empty %}{% endfor %}`, условия `{% if %}{% else %}`;
+- фильтры: `|length` (счётчики списков), `|default:"Без названия"`,
+  `|date:"d.m.Y"` (дата концерта — объект `date`);
+- пространства имён URL: `homepage`, `concerts`, `venues`,
+  `performers`, `programs` (`app_name` в каждом `urls.py`);
+- статика в `homepage/static/homepage/`:
+  `css/style.css`, `js/main.js`, `img/logo.png`
+  (подключение через `{% load static %}` / `{% static %}`).
+  Данные по-прежнему в JSON, Django ORM не используется.
 
 ## Основные операции
 
@@ -209,11 +236,12 @@ http://127.0.0.1:8000/
 
 ```text
 concerty/                # пакет настроек Django-проекта
-homepage/                # приложение: главная + page() + 404
-concerts/                # приложение: концерты (views, urls)
-venues/                  # приложение: площадки
-performers/              # приложение: исполнители
-programs/                # приложение: программы
+templates/               # base.html, 404.html, includes/navigation.html
+homepage/                # приложение: главная + 404 (templates, static)
+concerts/                # приложение: концерты (views, urls, templates)
+venues/                  # приложение: площадки (views, urls, templates)
+performers/              # приложение: исполнители (views, urls, templates)
+programs/                # приложение: программы (views, urls, templates)
 src/                     # консольное приложение и объектная модель (ПР3)
 data/                    # JSON-файлы данных
 tests/                   # автоматизированные тесты pytest
@@ -249,8 +277,7 @@ uv run python manage.py runserver
 
 На следующих этапах планируется:
 
-- разработка веб-приложения на Django на основе объектной модели;
-- подключение базы данных;
+- подключение базы данных (переход с JSON на Django ORM);
 - реализация пользователей;
 - разработка API;
 - контейнеризация приложения;
