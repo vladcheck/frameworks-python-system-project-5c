@@ -323,7 +323,7 @@ nohup.out
 
 .vscode
 .idea
-# Agent session artifacts
-.omp/
+# Agent session artifacts (keep shared config like .omp/mcp.json tracked)
+.omp/mcp.json.lock
 # GOST report sentinels (validation metadata, not report content)
 *.gost-meta.json
