@@ -323,3 +323,7 @@ nohup.out
 
 .vscode
 .idea
+# Agent session artifacts
+.omp/
+# GOST report sentinels (validation metadata, not report content)
+*.gost-meta.json
