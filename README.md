@@ -112,6 +112,41 @@ JSON-файлы не содержат сведений о внутренней �
 преобразуются в ссылки на объекты (`Concert.from_data()`), при сохранении —
 обратно (`Concert.to_data()`). Даты хранятся в формате ISO (`ГГГГ-ММ-ДД`).
 
+## SQLite-слой (ПР7, без Django ORM)
+
+Реляционное зеркало JSON-данных на чистом `sqlite3` (Django ORM
+не используется, миграции не менялись):
+
+- `sql/schema.sql` — схема: таблицы `performers`, `venues`, `programs`,
+  `concerts` (`INTEGER PRIMARY KEY`, `NOT NULL`,
+  `FOREIGN KEY` от концертов к трём справочникам,
+  `PRAGMA foreign_keys=ON`; дата — `TEXT` в ISO, отмена — `INTEGER` 0/1);
+- `db/database.py` — `connect()` (`row_factory=sqlite3.Row`,
+  `PRAGMA foreign_keys=ON`) и `get_db_path()` → `data/concerty.sqlite`
+  (отдельный файл, не `db.sqlite3` от Django; в git не коммитится);
+- `db/import_json.py` — импорт через загрузчики `src.storage`
+  (идемпотентный: `DELETE` + `INSERT OR REPLACE`; значения только
+  через `?`-плейсхолдеры и `executemany()`, затем `commit()`):
+
+```bash
+python -m db.import_json
+```
+
+- `sql/queries.sql` — 13 прокомментированных запросов
+  (списки, `WHERE`, `JOIN`, агрегаты, `GROUP BY`, `HAVING`,
+  свободные площадки на дату через `LEFT JOIN`, статистика
+  отменённых/активных и сумм гостей); проверка, например:
+
+```bash
+sqlite3 data/concerty.sqlite < sql/queries.sql
+```
+
+- `db/loaders.py` — загрузка объектов из SQLite для представлений
+  концертов (`concerts/views.py`) и площадок (`venues/views.py`),
+  включая проверку занятости площадки на дату; при отсутствии
+  файла `data/concerty.sqlite` представления молча откатываются
+  на JSON, тесты продолжают проходить.
+
 ## Требования
 
 - Python 3.13+;

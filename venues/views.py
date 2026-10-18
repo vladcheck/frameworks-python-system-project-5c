@@ -1,8 +1,11 @@
+import sqlite3
 from datetime import date
 
 from django.http import HttpRequest
 from django.shortcuts import render
 
+from db.loaders import load_all as load_all_sqlite
+from db.loaders import venue_free_on as venue_free_on_sqlite
 from src.models.concerts import is_venue_available
 from src.models.venues import get_venue_by_id
 from src.storage import (
@@ -14,10 +17,15 @@ from src.storage import (
 
 
 def _load_all():
-    performers = load_performers("data/performers.json")
-    venues = load_venues("data/venues.json")
-    programs = load_programs("data/programs.json")
-    concerts = load_concerts("data/concerts.json", performers, venues, programs)
+    try:
+        _, venues, _, concerts = load_all_sqlite()
+    except (FileNotFoundError, sqlite3.Error, OSError):
+        performers = load_performers("data/performers.json")
+        venues = load_venues("data/venues.json")
+        programs = load_programs("data/programs.json")
+        concerts = load_concerts(
+            "data/concerts.json", performers, venues, programs
+        )
     return venues, concerts
 
 
@@ -36,7 +44,12 @@ def venue_detail(request: HttpRequest, venue_id: int):
     if venue is None:
         context = {"venue": None, "related": []}
     else:
-        available = is_venue_available(concerts_list, venue.id, date.today())
+        try:
+            available = venue_free_on_sqlite(venue.id, date.today())
+        except (FileNotFoundError, sqlite3.Error, OSError):
+            available = is_venue_available(
+                concerts_list, venue.id, date.today()
+            )
         status_text = "свободна" if available else "занята"
         related = [c for c in concerts_list if c.venue.id == venue.id]
         context = {

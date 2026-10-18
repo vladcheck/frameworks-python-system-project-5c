@@ -1,8 +1,10 @@
+import sqlite3
 from datetime import date
 
 from django.http import HttpRequest
 from django.shortcuts import render
 
+from db.loaders import load_all as load_all_sqlite
 from src.models.concerts import get_concert_by_id
 from src.storage import (
     load_concerts,
@@ -13,10 +15,15 @@ from src.storage import (
 
 
 def _load_all():
-    performers = load_performers("data/performers.json")
-    venues = load_venues("data/venues.json")
-    programs = load_programs("data/programs.json")
-    concerts = load_concerts("data/concerts.json", performers, venues, programs)
+    try:
+        _, _, _, concerts = load_all_sqlite()
+    except (FileNotFoundError, sqlite3.Error, OSError):
+        performers = load_performers("data/performers.json")
+        venues = load_venues("data/venues.json")
+        programs = load_programs("data/programs.json")
+        concerts = load_concerts(
+            "data/concerts.json", performers, venues, programs
+        )
     return concerts
 
 
