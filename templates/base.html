@@ -12,8 +12,10 @@
     <link rel="stylesheet" href="{% static 'homepage/css/style.css' %}">
 </head>
 <body>
-    <img src="{% static 'homepage/img/logo.png' %}" alt="Concerty" class="concerty-logo">
-    {% include "includes/navigation.html" %}
+    <header class="site-header">
+        <img src="{% static 'homepage/img/logo.png' %}" alt="Concerty" class="concerty-logo">
+        {% include "includes/navigation.html" %}
+    </header>
     <main class="container">
         {% block content %}
         {% endblock %}
