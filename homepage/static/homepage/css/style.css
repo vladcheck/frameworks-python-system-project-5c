@@ -17,6 +17,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 6px;
 }
 
 .site-header .nav {
