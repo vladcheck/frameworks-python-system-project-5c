@@ -2,6 +2,7 @@
   <div class="card-body">
     <h5 class="card-title">{{ program.name|default:"Без названия" }}</h5>
     <p class="card-text">{{ program.duration }} мин — {{ program.age_limit }}+</p>
+    <p class="card-text mb-2">Концертов: {{ program.concert_count }}</p>
     <a href="{% url 'programs:program_detail' program.id %}">Подробнее</a>
   </div>
 </article>

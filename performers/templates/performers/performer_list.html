@@ -2,7 +2,28 @@
 {% block title %}Исполнители – Concerty{% endblock %}
 {% block content %}
 <h1>Исполнители</h1>
-<p>Всего исполнителей: {{ performers|length }}</p>
+<p>Всего исполнителей по выбранным условиям: {{ total_count }}</p>
+
+<form method="get" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="q" class="form-label">Поиск</label>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                class="form-control"
+                value="{{ query }}"
+                placeholder="Имя или жанр"
+            >
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Найти</button>
+            <a href="{% url 'performers:performers' %}" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
+    </div>
+</form>
+
 <ul class="list-group">
 {% for performer in performers %}
 {% include "performers/includes/performer_card.html" %}

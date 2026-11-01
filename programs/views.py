@@ -1,46 +1,46 @@
+"""Представления приложения programs: ORM-запросы и связи моделей."""
+
+from django.db.models import Count
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 
-from src.models.programs import get_program_by_id
-from src.storage import (
-    load_concerts,
-    load_performers,
-    load_programs,
-    load_venues,
-)
-
-
-def _load_all():
-    performers = load_performers("data/performers.json")
-    venues = load_venues("data/venues.json")
-    programs = load_programs("data/programs.json")
-    concerts = load_concerts("data/concerts.json", performers, venues, programs)
-    return programs, concerts
+from .models import Program
 
 
 def programs(request: HttpRequest):
-    programs_list, _ = _load_all()
-    return render(
-        request,
-        "programs/program_list.html",
-        {"programs": programs_list},
+    """Показать список программ с поиском и отбором по возрасту."""
+    query = request.GET.get("q", "").strip()
+    max_age = request.GET.get("max_age", "").strip()
+
+    # annotate() добавляет число концертов с этой программой.
+    programs_qs = Program.objects.annotate(
+        concert_count=Count("concerts"),
     )
+    if query:
+        programs_qs = programs_qs.filter(name__icontains=query)
+    if max_age.isdigit():
+        programs_qs = programs_qs.filter(age_limit__lte=int(max_age))
+    programs_qs = programs_qs.order_by("duration", "name")
+
+    context = {
+        "programs": programs_qs,
+        "query": query,
+        "max_age": max_age,
+        "total_count": programs_qs.count(),
+    }
+    return render(request, "programs/program_list.html", context)
 
 
 def program_detail(request: HttpRequest, program_id: int):
-    programs_list, concerts_list = _load_all()
-    program = get_program_by_id(programs_list, program_id)
-    if program is None:
-        context = {"program": None, "related": []}
-    else:
-        related = [c for c in concerts_list if c.program.id == program.id]
-        context = {
-            "program": program,
-            "related": related,
-        }
-    return render(
-        request,
-        "programs/program_detail.html",
-        context,
-        status=404 if program is None else 200,
-    )
+    """Показать программу и связанные концерты через обратную связь."""
+    program = get_object_or_404(Program, pk=program_id)
+
+    related = program.concerts.select_related(
+        "performer", "venue"
+    ).order_by("date")
+
+    context = {
+        "program": program,
+        "related": related,
+    }
+    return render(request, "programs/program_detail.html", context)

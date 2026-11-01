@@ -8,6 +8,8 @@
 <p class="card-text"><strong>ID:</strong> {{ performer.id }}</p>
 <p class="card-text"><strong>Жанр:</strong> {{ performer.genre }}</p>
 <p class="card-text"><strong>Рейтинг:</strong> {{ performer.rating }}</p>
+<p class="card-text">Всего зрителей на концертах: {{ totals.total_guests|default:0 }}</p>
+<p class="card-text">Средняя базовая цена билета: {{ totals.avg_price|floatformat:2 }} руб.</p>
 <h6>Концерты исполнителя:</h6>
 <ul class="list-group mb-3">
 {% for c in related %}

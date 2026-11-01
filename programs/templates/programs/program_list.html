@@ -2,7 +2,39 @@
 {% block title %}Программы – Concerty{% endblock %}
 {% block content %}
 <h1>Программы</h1>
-<p>Всего программ: {{ programs|length }}</p>
+<p>Всего программ по выбранным условиям: {{ total_count }}</p>
+
+<form method="get" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="q" class="form-label">Поиск</label>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                class="form-control"
+                value="{{ query }}"
+                placeholder="Название программы"
+            >
+        </div>
+        <div class="col-md-3">
+            <label for="max_age" class="form-label">Возраст до</label>
+            <input
+                type="number"
+                min="0"
+                id="max_age"
+                name="max_age"
+                class="form-control"
+                value="{{ max_age }}"
+            >
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Найти</button>
+            <a href="{% url 'programs:programs' %}" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
+    </div>
+</form>
+
 <ul class="list-group">
 {% for program in programs %}
 {% include "programs/includes/program_card.html" %}

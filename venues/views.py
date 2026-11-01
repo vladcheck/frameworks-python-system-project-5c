@@ -1,66 +1,96 @@
-import sqlite3
-from datetime import date
+"""Представления приложения venues: ORM, фильтры и доступность."""
 
+from datetime import date, datetime
+
+from django.db.models import Count, Q
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 
-from db.loaders import load_all as load_all_sqlite
-from db.loaders import venue_free_on as venue_free_on_sqlite
-from src.models.concerts import is_venue_available
-from src.models.venues import get_venue_by_id
-from src.storage import (
-    load_concerts,
-    load_performers,
-    load_programs,
-    load_venues,
-)
+from concerts.models import Concert
+
+from .models import Venue
 
 
-def _load_all():
+def _parse_date(value: str):
+    """Преобразовать строку ГГГГ-ММ-ДД в объект date или вернуть None."""
     try:
-        _, venues, _, concerts = load_all_sqlite()
-    except (FileNotFoundError, sqlite3.Error, OSError):
-        performers = load_performers("data/performers.json")
-        venues = load_venues("data/venues.json")
-        programs = load_programs("data/programs.json")
-        concerts = load_concerts(
-            "data/concerts.json", performers, venues, programs
-        )
-    return venues, concerts
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 
 def venues(request: HttpRequest):
-    venues_list, _ = _load_all()
-    return render(
-        request,
-        "venues/venue_list.html",
-        {"venues": venues_list},
-    )
+    """Показать список площадок с поиском и отбором по вместимости."""
+    query = request.GET.get("q", "").strip()
+    min_capacity = request.GET.get("min_capacity", "").strip()
+
+    # annotate() добавляет число концертов каждой площадки.
+    venues_qs = Venue.objects.annotate(concert_count=Count("concerts"))
+    if query:
+        venues_qs = venues_qs.filter(
+            Q(name__icontains=query) | Q(city__icontains=query)
+        )
+    if min_capacity.isdigit():
+        venues_qs = venues_qs.filter(capacity__gte=int(min_capacity))
+    venues_qs = venues_qs.order_by("-capacity", "name")
+
+    context = {
+        "venues": venues_qs,
+        "query": query,
+        "min_capacity": min_capacity,
+        "total_count": venues_qs.count(),
+    }
+    return render(request, "venues/venue_list.html", context)
 
 
 def venue_detail(request: HttpRequest, venue_id: int):
-    venues_list, concerts_list = _load_all()
-    venue = get_venue_by_id(venues_list, venue_id)
-    if venue is None:
-        context = {"venue": None, "related": []}
-    else:
-        try:
-            available = venue_free_on_sqlite(venue.id, date.today())
-        except (FileNotFoundError, sqlite3.Error, OSError):
-            available = is_venue_available(
-                concerts_list, venue.id, date.today()
-            )
-        status_text = "свободна" if available else "занята"
-        related = [c for c in concerts_list if c.venue.id == venue.id]
-        context = {
-            "venue": venue,
-            "available": available,
-            "status_text": status_text,
-            "related": related,
-        }
-    return render(
-        request,
-        "venues/venue_detail.html",
-        context,
-        status=404 if venue is None else 200,
-    )
+    """Показать площадку, её концерты и доступность на текущую дату."""
+    venue = get_object_or_404(Venue, pk=venue_id)
+
+    # Связанные концерты через обратную связь и select_related().
+    related = venue.concerts.select_related(
+        "performer", "program"
+    ).order_by("date")
+
+    # Отменённые концерты площадку не блокируют.
+    busy_today = venue.concerts.filter(
+        date=date.today(),
+        is_cancelled=False,
+    ).exists()
+
+    context = {
+        "venue": venue,
+        "related": related,
+        "available": not busy_today,
+        "status_text": "занята" if busy_today else "свободна",
+    }
+    return render(request, "venues/venue_detail.html", context)
+
+
+def available_venues(request: HttpRequest):
+    """Найти площадки, свободные на выбранную дату (exclude())."""
+    booking_date = request.GET.get("date", "").strip()
+    venues_list = Venue.objects.none()
+    error = None
+
+    if booking_date:
+        selected_date = _parse_date(booking_date)
+        if selected_date is None:
+            error = "Укажите корректную дату."
+        else:
+            # Идентификаторы площадок с активными концертами на дату.
+            booked_venue_ids = Concert.objects.filter(
+                date=selected_date,
+                is_cancelled=False,
+            ).values_list("venue_id", flat=True)
+            # exclude() убирает занятые площадки из общего списка.
+            venues_list = Venue.objects.exclude(
+                pk__in=booked_venue_ids,
+            ).order_by("name")
+
+    context = {
+        "venues": venues_list,
+        "booking_date": booking_date,
+        "error": error,
+    }
+    return render(request, "venues/available.html", context)

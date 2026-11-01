@@ -4,10 +4,123 @@
 
 {% block content %}
 <h1>Концерты</h1>
-<p>Всего концертов: {{ concerts|length }}</p>
+<p>Всего концертов по выбранным условиям: {{ total_count }}</p>
+
+<form method="get" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="q" class="form-label">Поиск</label>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                class="form-control"
+                value="{{ query }}"
+                placeholder="Название концерта или исполнитель"
+            >
+        </div>
+        <div class="col-md-2">
+            <label for="venue" class="form-label">Площадка</label>
+            <select id="venue" name="venue" class="form-select">
+                <option value="">Все площадки</option>
+                {% for venue in venues %}
+                <option value="{{ venue.pk }}"
+                    {% if selected_venue == venue.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ venue.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="performer" class="form-label">Исполнитель</label>
+            <select id="performer" name="performer" class="form-select">
+                <option value="">Все исполнители</option>
+                {% for performer in performers %}
+                <option value="{{ performer.pk }}"
+                    {% if selected_performer == performer.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ performer.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="status" class="form-label">Статус</label>
+            <select id="status" name="status" class="form-select">
+                {% for value, label in status_choices %}
+                <option value="{{ value }}"
+                    {% if selected_status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="date_from" class="form-label">Дата с</label>
+            <input
+                type="date"
+                id="date_from"
+                name="date_from"
+                class="form-control"
+                value="{{ date_from }}"
+            >
+        </div>
+    </div>
+    <div class="row g-3 mt-1 align-items-end">
+        <div class="col-md-3">
+            <label for="sort" class="form-label">Сортировать по</label>
+            <select id="sort" name="sort" class="form-select">
+                <option value="date" {% if sort == "date" %}selected{% endif %}>Дате</option>
+                <option value="title" {% if sort == "title" %}selected{% endif %}>Названию</option>
+                <option value="venue" {% if sort == "venue" %}selected{% endif %}>Площадке</option>
+                <option value="performer" {% if sort == "performer" %}selected{% endif %}>Исполнителю</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Найти</button>
+            <a href="{% url 'concerts:concerts' %}" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
+    </div>
+</form>
+
+{% if error %}
+<p class="text-danger">{{ error }}</p>
+{% endif %}
+
 {% for concert in concerts %}
 {% include "concerts/includes/concert_card.html" %}
 {% empty %}
 <p>Концерты не найдены.</p>
 {% endfor %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Навигация по страницам">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="{% querystring page=page_obj.previous_page_number %}">Назад</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Назад</span></li>
+        {% endif %}
+        {% for page_number in page_obj.paginator.page_range %}
+        {% if page_number == page_obj.number %}
+        <li class="page-item active" aria-current="page">
+            <span class="page-link">{{ page_number }}</span>
+        </li>
+        {% else %}
+        <li class="page-item">
+            <a class="page-link" href="{% querystring page=page_number %}">{{ page_number }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{% querystring page=page_obj.next_page_number %}">Далее</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Далее</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}
