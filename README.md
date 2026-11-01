@@ -203,12 +203,16 @@ pip install -r requirements.txt
 python manage.py migrate
 ```
 
-5. При необходимости перенести данные ПР7 (файл `data/concerty.sqlite`
-   в репозиторий не входит, поэтому на чистом клоне шаг пропускается):
+5. При необходимости перенести данные ПР7. Файл `data/concerty.sqlite`
+   в репозиторий не входит, поэтому на чистом клоне сначала соберите его
+   из JSON (этап ПР7), затем перенесите данные в таблицы Django:
 
 ```bash
-python db/import_sqlite_to_orm.py
+python -m db.import_json         # JSON -> data/concerty.sqlite (схема ПР7)
+python db/import_sqlite_to_orm.py  # data/concerty.sqlite -> Django ORM
 ```
+
+Если файл `data/concerty.sqlite` уже есть, достаточно второй команды.
 
 6. Запустить сервер разработки и открыть `http://127.0.0.1:8000/`:
 
