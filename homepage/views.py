@@ -7,3 +7,7 @@ def page_not_found(request, exception):
 
 def index(request):
     return render(request, "homepage/index.html")
+
+def demo_escape(request):
+    payload = '<script>alert("XSS")</script><b>жирный</b>'
+    return render(request, "homepage/demo_escape.html", {"payload": payload})
