@@ -2,6 +2,7 @@
   <div class="card-body">
     <h5 class="card-title">{{ performer.name|default:"Без названия" }}</h5>
     <p class="card-text">{{ performer.genre }} — рейтинг {{ performer.rating }}</p>
+    <p class="card-text mb-2">Концертов: {{ performer.concert_count }}</p>
     <a href="{% url 'performers:performer_detail' performer.id %}">Подробнее</a>
   </div>
 </article>

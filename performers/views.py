@@ -1,46 +1,53 @@
+"""Представления приложения performers: ORM-запросы и связи моделей."""
+
+from django.db.models import Avg, Count, Q, Sum
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 
-from src.models.performers import get_performer_by_id
-from src.storage import (
-    load_concerts,
-    load_performers,
-    load_programs,
-    load_venues,
-)
-
-
-def _load_all():
-    performers = load_performers("data/performers.json")
-    venues = load_venues("data/venues.json")
-    programs = load_programs("data/programs.json")
-    concerts = load_concerts("data/concerts.json", performers, venues, programs)
-    return performers, concerts
+from .models import Performer
 
 
 def performers(request: HttpRequest):
-    performers_list, _ = _load_all()
-    return render(
-        request,
-        "performers/performer_list.html",
-        {"performers": performers_list},
+    """Показать список исполнителей с поиском и числом концертов."""
+    query = request.GET.get("q", "").strip()
+
+    # annotate() считает связанные концерты, Count() группирует записи.
+    performers_qs = Performer.objects.annotate(
+        concert_count=Count("concerts"),
     )
+    if query:
+        # Поиск сразу по двум полям модели через Q().
+        performers_qs = performers_qs.filter(
+            Q(name__icontains=query) | Q(genre__icontains=query)
+        )
+    performers_qs = performers_qs.order_by("-rating", "name")
+
+    context = {
+        "performers": performers_qs,
+        "query": query,
+        "total_count": performers_qs.count(),
+    }
+    return render(request, "performers/performer_list.html", context)
 
 
 def performer_detail(request: HttpRequest, performer_id: int):
-    performers_list, concerts_list = _load_all()
-    performer = get_performer_by_id(performers_list, performer_id)
-    if performer is None:
-        context = {"performer": None, "related": []}
-    else:
-        related = [c for c in concerts_list if c.performer.id == performer.id]
-        context = {
-            "performer": performer,
-            "related": related,
-        }
-    return render(
-        request,
-        "performers/performer_detail.html",
-        context,
-        status=404 if performer is None else 200,
+    """Показать исполнителя и связанные концерты через обратную связь."""
+    performer = get_object_or_404(Performer, pk=performer_id)
+
+    # Обратная связь related_name="concerts" и select_related().
+    related = performer.concerts.select_related(
+        "venue", "program"
+    ).order_by("date")
+
+    # Агрегирование по связанным концертам исполнителя.
+    totals = performer.concerts.aggregate(
+        total_guests=Sum("expected_guests"),
+        avg_price=Avg("base_ticket_price"),
     )
+
+    context = {
+        "performer": performer,
+        "related": related,
+        "totals": totals,
+    }
+    return render(request, "performers/performer_detail.html", context)

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Демо автоэкранирования – Concerty{% endblock %}
+
+{% block content %}
+<h1>Демо автоэкранирования (ВРЕМЕННО, будет удалено)</h1>
+
+<h2>1. Экранировано (безопасно): <code>{{ "{{ payload }}" }}</code></h2>
+<p>{{ payload }}</p>
+<p class="text-muted">Теги видны как текст, скрипт НЕ выполняется.</p>
+
+<hr>
+
+<h2>2. Без экранирования (опасно): <code>{{ "{{ payload|safe }}" }}</code></h2>
+<p>{{ payload|safe }}</p>
+<p class="text-muted">Тег <code>&lt;b&gt;</code> рендерится жирным, скрипт выполняется (alert).</p>
+{% endblock %}

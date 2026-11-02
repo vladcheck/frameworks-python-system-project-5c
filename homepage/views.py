@@ -11,3 +11,10 @@ def index(request):
         document.body.textContent = "Вас взломали!"
         </script>
     """})  # pragma: no cover
+
+    return render(request, "homepage/index.html")
+
+
+def demo_escape(request):
+    payload = '<script>alert("XSS")</script><b>жирный</b>'
+    return render(request, "homepage/demo_escape.html", {"payload": payload})

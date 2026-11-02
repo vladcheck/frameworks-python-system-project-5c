@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика концертов – Concerty{% endblock %}
+
+{% block content %}
+<h1>Статистика концертов</h1>
+<p>Сводные показатели рассчитаны средствами Django ORM на {{ today|date:"d.m.Y" }}.</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6 text-muted">Всего концертов</h2>
+            <p class="display-6">{{ overall.total }}</p>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6 text-muted">Ожидается зрителей</h2>
+            <p class="display-6">{{ overall.guests|default:0 }}</p>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6 text-muted">Ближайших активных</h2>
+            <p class="display-6">{{ upcoming }}</p>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6 text-muted">Средняя цена билета, руб.</h2>
+            <p class="display-6">{{ overall.avg_price|floatformat:2 }}</p>
+        </div></div>
+    </div>
+</div>
+
+<h2 class="h4">Концерты по статусу</h2>
+<table class="table table-striped mb-4">
+    <thead>
+        <tr>
+            <th>Статус</th>
+            <th>Количество концертов</th>
+            <th>Ожидается зрителей</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in by_status %}
+        <tr>
+            <td>{% if row.is_cancelled %}Отменённые{% else %}Активные{% endif %}</td>
+            <td>{{ row.count }}</td>
+            <td>{{ row.guests|default:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">Данные отсутствуют.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="h4">Статистика по площадкам</h2>
+<table class="table table-striped mb-4">
+    <thead>
+        <tr>
+            <th>Площадка</th>
+            <th>Всего концертов</th>
+            <th>Активных</th>
+            <th>Ожидается зрителей</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venue in venue_stats %}
+        <tr>
+            <td>{{ venue.name }}</td>
+            <td>{{ venue.total_count }}</td>
+            <td>{{ venue.active_count }}</td>
+            <td>{{ venue.guests|default:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">Площадки отсутствуют.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="h4">Ведущие исполнители по числу концертов</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Исполнитель</th>
+            <th>Концертов</th>
+            <th>Среднее число зрителей</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for performer in performer_stats %}
+        <tr>
+            <td>{{ performer.name }}</td>
+            <td>{{ performer.concerts_count }}</td>
+            <td>{{ performer.avg_guests|floatformat:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">Данные отсутствуют.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
