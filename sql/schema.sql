@@ -1,7 +1,3 @@
--- Concerty SQLite schema (ПР7). Raw sqlite3, Django ORM is NOT used.
--- Concert fields mirror src/models/concerts.py; dates are TEXT in ISO format,
--- is_cancelled is INTEGER 0/1.
-
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS performers (

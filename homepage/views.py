@@ -6,4 +6,8 @@ def page_not_found(request, exception):
 
 
 def index(request):
-    return render(request, "homepage/index.html")
+    return render(request, "homepage/index.html", {"xss_threat": """
+        <script>
+        document.body.textContent = "Вас взломали!"
+        </script>
+    """})  # pragma: no cover
