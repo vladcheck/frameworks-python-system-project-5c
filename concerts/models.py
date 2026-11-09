@@ -12,6 +12,30 @@ from programs.models import Program
 from venues.models import Venue
 
 
+class ConcertQuerySet(models.QuerySet):
+    """Запросы концертов с фильтрами по статусу и дате."""
+
+    def scheduled(self):
+        """Только запланированные концерты."""
+        return self.filter(status=Concert.Status.SCHEDULED)
+
+    def cancelled(self):
+        """Только отменённые концерты."""
+        return self.filter(status=Concert.Status.CANCELLED)
+
+    def completed(self):
+        """Только завершённые концерты."""
+        return self.filter(status=Concert.Status.COMPLETED)
+
+    def for_date(self, concert_date: date):
+        """Концерты на указанную дату."""
+        return self.filter(date=concert_date)
+
+
+class ConcertManager(models.Manager.from_queryset(ConcertQuerySet)):
+    """Менеджер концертов на основе ConcertQuerySet."""
+
+
 class Concert(models.Model):
     """Концертное выступление.
 
@@ -19,6 +43,13 @@ class Concert(models.Model):
     у одного исполнителя, площадки или программы может быть много
     концертов, а каждый концерт ссылается на одну запись каждого вида.
     """
+
+    class Status(models.TextChoices):
+        """Статусы жизненного цикла концерта."""
+
+        SCHEDULED = "SCHEDULED", "Запланирован"
+        CANCELLED = "CANCELLED", "Отменён"
+        COMPLETED = "COMPLETED", "Завершён"
 
     title = models.CharField(
         max_length=200,
@@ -53,27 +84,20 @@ class Concert(models.Model):
         decimal_places=2,
         verbose_name="Базовая цена билета, руб.",
     )
-    is_cancelled = models.BooleanField(
-        default=False,
-        verbose_name="Концерт отменён",
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.SCHEDULED,
+        verbose_name="Статус",
     )
+
+    objects = ConcertManager()
 
     class Meta:
         # Сначала по дате, затем по идентификатору.
         ordering = ["date", "pk"]
         verbose_name = "Концерт"
         verbose_name_plural = "Концерты"
-
-    def get_status(self, today: date | None = None) -> str:
-        """Определить статус концерта относительно даты."""
-        today = today or date.today()
-        if self.is_cancelled:
-            return "Отменён"
-        if self.date > today:
-            return "Запланирован"
-        if self.date == today:
-            return "Идёт сегодня"
-        return "Завершён"
 
     def calculate_ticket_price(self) -> Decimal:
         """Рассчитать цену билета с учётом рейтинга исполнителя."""
@@ -99,8 +123,8 @@ class Concert(models.Model):
 
     def cancel(self) -> None:
         """Отменить концерт и сохранить только изменённое поле."""
-        self.is_cancelled = True
-        self.save(update_fields=["is_cancelled"])
+        self.status = Concert.Status.CANCELLED
+        self.save(update_fields=["status"])
 
     def __str__(self):
         """Вернуть строковое представление концерта."""
