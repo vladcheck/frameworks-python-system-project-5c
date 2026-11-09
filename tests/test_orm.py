@@ -1,6 +1,6 @@
 """ORM-тесты моделей, связей и запросов (ПР9)."""
 
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -18,9 +18,6 @@ from concerts.models import Concert
 from performers.models import Performer
 from programs.models import Program
 from venues.models import Venue
-
-# Фиксированная дата отсчёта, чтобы тесты не зависели от текущего дня.
-TODAY = date(2026, 6, 1)
 
 
 @pytest.fixture
@@ -90,7 +87,7 @@ def factory():
         concert_date=date(2027, 1, 1),
         expected_guests=100,
         base_ticket_price="1000.00",
-        is_cancelled=False,
+        status=Concert.Status.SCHEDULED,
     ):
         obj = Concert.objects.create(
             pk=take_pk(pk),
@@ -101,7 +98,7 @@ def factory():
             date=concert_date,
             expected_guests=expected_guests,
             base_ticket_price=Decimal(str(base_ticket_price)),
-            is_cancelled=is_cancelled,
+            status=status,
         )
         created["concerts"].append(obj.pk)
         return obj
@@ -279,43 +276,24 @@ def test_calculate_revenue(factory):
     assert concert.calculate_revenue() == Decimal("150000.00")
 
 
-def test_get_status_cancelled(factory):
-    concert = _create_concert(factory, is_cancelled=True)
-    assert concert.get_status(TODAY) == "Отменён"
+def test_concert_default_status_is_scheduled(factory):
+    concert = _create_concert(factory)
+    assert concert.status == Concert.Status.SCHEDULED
+    assert concert.get_status_display() == "Запланирован"
 
 
-def test_get_status_relative_to_today(factory):
-    performer = factory.make_performer()
-    venue = factory.make_venue()
-    program = factory.make_program()
-    future = factory.make_concert(
-        performer=performer,
-        venue=venue,
-        program=program,
-        concert_date=TODAY + timedelta(days=1),
+def test_concert_status_choices_labels():
+    assert Concert.Status.SCHEDULED.label == "Запланирован"
+    assert Concert.Status.CANCELLED.label == "Отменён"
+    assert Concert.Status.COMPLETED.label == "Завершён"
+
+
+def test_cancelled_status_persisted(factory):
+    concert = _create_concert(
+        factory,
+        status=Concert.Status.CANCELLED,
     )
-    today = factory.make_concert(
-        performer=performer,
-        venue=venue,
-        program=program,
-        concert_date=TODAY,
-    )
-    past = factory.make_concert(
-        performer=performer,
-        venue=venue,
-        program=program,
-        concert_date=TODAY - timedelta(days=1),
-    )
-    assert future.get_status(TODAY) == "Запланирован"
-    assert today.get_status(TODAY) == "Идёт сегодня"
-    assert past.get_status(TODAY) == "Завершён"
-
-
-def test_get_status_default_today(factory):
-    future = _create_concert(factory, concert_date=date(2099, 1, 1))
-    past = _create_concert(factory, concert_date=date(1999, 1, 1))
-    assert future.get_status() == "Запланирован"
-    assert past.get_status() == "Завершён"
+    assert concert.get_status_display() == "Отменён"
 
 
 def test_cancel_persists_and_saves_only_changed_field(factory):
@@ -323,7 +301,7 @@ def test_cancel_persists_and_saves_only_changed_field(factory):
     concert.title = "Название без сохранения"
     concert.cancel()
     concert.refresh_from_db()
-    assert concert.is_cancelled is True
+    assert concert.status == Concert.Status.CANCELLED
     assert concert.title == "Исходный концерт"
 
 
@@ -458,16 +436,51 @@ def test_reverse_relations_from_performer():
     performer = Performer.objects.get(pk=1)
     manager = performer.concerts
     assert manager.model is Concert
-    assert list(manager.order_by("pk").values_list("pk", flat=True)) == [1, 13]
+    assert list(manager.order_by("pk").values_list("pk", flat=True)) == [
+        1,
+        13,
+        48,
+        81,
+        100,
+        104,
+        105,
+        109,
+        146,
+    ]
 
 
 def test_reverse_relations_from_venue_and_program():
     venue = Venue.objects.get(pk=1)
-    assert list(venue.concerts.values_list("pk", flat=True)) == [1]
+    assert sorted(venue.concerts.values_list("pk", flat=True)) == [
+        1,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+    ]
     program = Program.objects.get(pk=3)
     assert list(program.concerts.order_by("pk").values_list("pk", flat=True)) == [
         2,
         5,
+        20,
+        32,
+        33,
+        41,
+        53,
+        54,
+        66,
+        91,
+        107,
+        122,
+        135,
     ]
 
 
@@ -510,52 +523,52 @@ def test_prefetch_related_loads_concerts_in_two_queries():
         counts = [len(venue.concerts.all()) for venue in venues]
     assert len(captured.captured_queries) == 2
     assert len(counts) == 12
-    assert counts[0] == 1
-    assert counts[11] == 0
-    assert sum(counts) == 15
+    assert counts[0] == 13
+    assert counts[11] == 12
+    assert sum(counts) == 159
 
 
 # --- Запросы ---
 
 
 def test_queryset_all_and_counts():
-    assert Concert.objects.count() == 15
+    assert Concert.objects.count() == 159
     assert Performer.objects.count() == 12
     assert Venue.objects.count() == 12
     assert Program.objects.count() == 12
-    assert len(list(Concert.objects.all())) == 15
+    assert len(list(Concert.objects.all())) == 159
 
 
 def test_filter_single_and_multiple_conditions():
-    assert Concert.objects.filter(venue_id=1).count() == 1
-    assert Concert.objects.filter(venue_id=3, is_cancelled=False).count() == 2
-    assert Concert.objects.filter(is_cancelled=True).count() == 0
-    assert Concert.objects.filter(date__gte=date(2026, 11, 1)).count() == 5
-    assert Concert.objects.filter(expected_guests__gte=5000).count() == 4
+    assert Concert.objects.filter(venue_id=1).count() == 13
+    assert (
+        Concert.objects.filter(
+            venue_id=3,
+            status=Concert.Status.SCHEDULED,
+        ).count()
+        == 10
+    )
+    assert (
+        Concert.objects.filter(status=Concert.Status.CANCELLED).count() == 13
+    )
+    assert Concert.objects.filter(date__gte=date(2026, 11, 1)).count() == 149
+    assert Concert.objects.filter(expected_guests__gte=5000).count() == 24
 
 
 def test_filter_by_related_field_city():
     moscow = Concert.objects.filter(venue__city="Москва")
-    assert moscow.count() == 11
-    assert set(moscow.values_list("pk", flat=True)) == {
-        1,
-        3,
-        4,
-        6,
-        8,
-        9,
-        10,
-        11,
-        12,
-        14,
-        15,
-    }
+    assert moscow.count() == 107
+    assert {1, 3, 4, 6}.issubset(
+        set(moscow.values_list("pk", flat=True))
+    )
 
 
 def test_exclude_by_related_field_city():
     not_moscow = Concert.objects.exclude(venue__city="Москва")
-    assert not_moscow.count() == 4
-    assert set(not_moscow.values_list("pk", flat=True)) == {2, 5, 7, 13}
+    assert not_moscow.count() == 52
+    assert {2, 5, 7, 13}.issubset(
+        set(not_moscow.values_list("pk", flat=True))
+    )
 
 
 def test_get_and_get_object_or_404():
@@ -570,16 +583,30 @@ def test_get_and_get_object_or_404():
 
 def test_icontains_search():
     by_title = Concert.objects.filter(title__icontains="Мейби")
-    assert set(by_title.values_list("pk", flat=True)) == {1, 13}
+    assert set(by_title.values_list("pk", flat=True)) == {
+        1,
+        13,
+        48,
+        81,
+        100,
+        104,
+        105,
+        109,
+        146,
+    }
     by_performer = Concert.objects.filter(performer__name__icontains="Аигел")
-    assert set(by_performer.values_list("pk", flat=True)) == {12, 14}
+    performer_pks = set(by_performer.values_list("pk", flat=True))
+    assert len(performer_pks) == 12
+    assert {12, 14}.issubset(performer_pks)
 
 
 def test_q_or_search():
     result = Concert.objects.filter(
         Q(title__icontains="Дора") | Q(performer__name__icontains="Звери")
     )
-    assert set(result.values_list("pk", flat=True)) == {2, 9, 15}
+    result_pks = set(result.values_list("pk", flat=True))
+    assert len(result_pks) == 23
+    assert {2, 9, 15}.issubset(result_pks)
 
 
 def test_order_by_single_field():
@@ -609,12 +636,12 @@ def test_values():
     row = Concert.objects.filter(pk=1).values(
         "title",
         "expected_guests",
-        "is_cancelled",
+        "status",
     ).get()
     assert row == {
         "title": "Клубный вечер с Мейби Бейби",
         "expected_guests": 4800,
-        "is_cancelled": False,
+        "status": "COMPLETED",
     }
 
 
@@ -633,16 +660,16 @@ def test_annotate_count_with_q_filter():
         total=Count("concerts"),
         active=Count(
             "concerts",
-            filter=Q(concerts__is_cancelled=False),
+            filter=Q(concerts__status=Concert.Status.SCHEDULED),
         ),
         cancelled=Count(
             "concerts",
-            filter=Q(concerts__is_cancelled=True),
+            filter=Q(concerts__status=Concert.Status.CANCELLED),
         ),
     ).get(pk=1)
-    assert (stats.total, stats.active, stats.cancelled) == (1, 1, 0)
+    assert (stats.total, stats.active, stats.cancelled) == (13, 6, 1)
     empty = Venue.objects.annotate(total=Count("concerts")).get(pk=12)
-    assert empty.total == 0
+    assert empty.total == 12
 
 
 def test_annotate_with_aggregate_over_related():
@@ -651,13 +678,13 @@ def test_annotate_with_aggregate_over_related():
         .annotate(total_guests=Sum("concerts__expected_guests"))
         .get()
     )
-    assert performer.total_guests == 6800
+    assert performer.total_guests == 35652
     venue = (
         Venue.objects.filter(pk=1)
         .annotate(total_guests=Sum("concerts__expected_guests"))
         .get()
     )
-    assert venue.total_guests == 4800
+    assert venue.total_guests == 32055
 
 
 def test_aggregate_statistics():
@@ -668,21 +695,22 @@ def test_aggregate_statistics():
         max_price=Max("base_ticket_price"),
         avg_price=Avg("base_ticket_price"),
     )
-    assert aggregate["total"] == 15
-    assert aggregate["guests"] == 93000
-    assert aggregate["min_price"] == Decimal("1100")
+    assert aggregate["total"] == 159
+    assert aggregate["guests"] == 510063
+    assert aggregate["min_price"] == Decimal("10.50")
     assert aggregate["max_price"] == Decimal("2500")
-    assert float(aggregate["avg_price"]) == pytest.approx(26300 / 15)
+    assert float(aggregate["avg_price"]) == pytest.approx(217.35220125786162)
 
 
 def test_paginator_pages():
     queryset = Concert.objects.order_by("date", "pk")
     paginator = Paginator(queryset, 6)
-    assert paginator.count == 15
-    assert paginator.num_pages == 3
+    assert paginator.count == 159
+    assert paginator.num_pages == 27
     assert [item.pk for item in paginator.page(1)] == [5, 4, 15, 6, 7, 11]
-    assert [item.pk for item in paginator.page(2)] == [1, 12, 2, 13, 3, 8]
-    assert [item.pk for item in paginator.page(3)] == [9, 14, 10]
+    assert [item.pk for item in paginator.page(2)] == [1, 12, 2, 13, 45, 62]
+    assert [item.pk for item in paginator.page(3)] == [114, 133, 24, 76, 110, 132]
+    assert [item.pk for item in paginator.page(27)] == [95, 14, 10]
 
 
 # --- Миграции ---

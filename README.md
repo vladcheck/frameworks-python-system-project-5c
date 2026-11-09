@@ -3,6 +3,9 @@
 Веб-приложение на Django для учета концертных выступлений: концерты,
 исполнители, площадки и концертные программы. Слой доступа к данным
 построен на Django ORM (ПР9), структура базы управляется миграциями.
+В ПР10 добавлены статусы концертов с менеджером запросов, slug-адреса
+площадок, сгенерированное поле `is_large`, контекстный процессор,
+русская локализация приложений и Django Debug Toolbar.
 
 Консольная версия ПР3 и промежуточные реализации ПР5-ПР7 сохранены
 в репозитории как история развития проекта.
@@ -35,9 +38,10 @@
 - SQLite: база `db.sqlite3` управляется Django ORM и миграциями;
 - Bootstrap 5.3 (CDN) и собственные CSS, JS, логотип в
   `homepage/static/homepage/`;
-- pytest и flake8 для проверки качества кода.
+- pytest и flake8 для проверки качества кода;
+- Django Debug Toolbar 8.0 для отладки SQL-запросов в режиме `DEBUG`.
 
-## Модели данных (ПР9)
+## Модели данных (ПР9, дополнено в ПР10)
 
 Модели описаны в файлах `models.py` четырех приложений. Django
 автоматически создает первичный ключ `id` (BigAutoField).
@@ -51,8 +55,18 @@
 ### Venue - площадка (`venues/models.py`)
 
 Поля: `name` (CharField, 200), `city` (CharField, 100),
-`capacity` (PositiveIntegerField). Сортировка по названию.
-Метод `is_suitable_for(people_count)` проверяет вместимость.
+`capacity` (PositiveIntegerField), `slug` (SlugField, 200, уникальный,
+необязательный), `is_large` (GeneratedField, `capacity >= 500`).
+Сортировка по названию. Метод `is_suitable_for(people_count)` проверяет
+вместимость.
+
+Слаг генерируется автоматически из названия при первом сохранении
+(`slugify` с поддержкой кириллицы); при коллизии к слагу добавляется
+суффикс `-2`, `-3` и т. д. Метод `get_absolute_url()` возвращает
+канонический адрес страницы площадки (`/venues/<slug>/`), по нему
+работает ссылка «Смотреть на сайте» в админке. Поле `is_large` -
+сгенерированная колонка SQLite (`GeneratedField`, `db_persist=True`),
+пересчитываемая базой данных при изменении вместимости.
 
 ### Program - программа (`programs/models.py`)
 
@@ -64,8 +78,16 @@
 
 Поля: `title` (CharField, 200), `date` (DateField),
 `expected_guests` (PositiveIntegerField), `base_ticket_price`
-(DecimalField, 10 знаков, 2 после запятой), `is_cancelled`
-(BooleanField, по умолчанию `False`).
+(DecimalField, 10 знаков, 2 после запятой), `status` (CharField, 20,
+choices) - статус концерта.
+
+Статусы описаны через `class Status(models.TextChoices)`:
+`SCHEDULED` («Запланирован», значение по умолчанию), `CANCELLED`
+(«Отменён»), `COMPLETED` («Завершён»). Для запросов по статусам
+используется менеджер `ConcertManager` на основе `ConcertQuerySet`
+с методами `scheduled()`, `cancelled()`, `completed()` и `for_date(d)`;
+во всех представлениях фильтрация идет только по константам
+`Concert.Status`, без строковых литералов.
 
 Связи с тремя справочниками описаны через `ForeignKey`:
 
@@ -82,16 +104,42 @@
 дает обратный доступ: `performer.concerts`, `venue.concerts`,
 `program.concerts`.
 
-Методы модели: `get_status(today)` (запланирован / идет сегодня /
-завершен / отменен), `calculate_ticket_price()` (цена с учетом рейтинга
+Методы модели: `calculate_ticket_price()` (цена с учетом рейтинга
 исполнителя), `check_venue_fit()` (вместимость площадки),
-`calculate_revenue()` (ожидаемая выручка), `cancel()` (отмена
-с сохранением только измененного поля). Отмененный концерт площадку
-не блокирует.
+`calculate_revenue()` (ожидаемая выручка), `cancel()` (установка
+статуса `CANCELLED` с сохранением только измененного поля).
+Текстовый статус выводится через `get_status_display()`.
+Запланированные концерты блокируют площадку на дату; отмененные
+и завершенные - нет.
+
+Миграции ПР10 перенесли данные: признак `is_cancelled` преобразован
+в статус (отмененные -> `CANCELLED`, прошедшие на момент миграции ->
+`COMPLETED`, остальные -> `SCHEDULED`), после чего поле `is_cancelled`
+удалено.
 
 Все модели зарегистрированы в административной панели
 (`admin.py` каждого приложения) с настройками `list_display`,
-`list_filter`, `search_fields`, `list_select_related`.
+`list_display_links`, `list_filter`, `search_fields`, `ordering` и
+`list_per_page = 20`. ConcertAdmin дополнительно использует
+`date_hierarchy = "date"` и `list_select_related`. У площадок,
+исполнителей и программ на странице редактирования выводится
+вложенный инлайн `TabularInline` с концертами (только просмотр:
+поля доступны только для чтения, удаление отключено, так как внешние
+ключи защищены `PROTECT`).
+
+Приложения объявлены через классы конфигурации
+(`homepage.apps.HomepageConfig`, `performers.apps.PerformersConfig`,
+`programs.apps.ProgramsConfig`, `venues.apps.VenuesConfig`,
+`concerts.apps.ConcertsConfig`) с русскими `verbose_name`
+(«Главная», «Исполнители», «Программы», «Площадки», «Концерты»),
+поэтому заголовки разделов админки отображаются на русском языке
+(`LANGUAGE_CODE = "ru-RU"`).
+
+Контекстный процессор `concerts.context_processors.concert_context`
+добавляет на каждую страницу `site_name` ("Concerty") и
+`concerts_count` - число запланированных концертов; имя сайта
+используется в заголовке вкладки и подвале `templates/base.html`,
+а счетчик - в ссылке «Концерты» навигации.
 
 ## Миграции
 
@@ -100,7 +148,18 @@
 - `performers/migrations/0001_initial.py`;
 - `venues/migrations/0001_initial.py`;
 - `programs/migrations/0001_initial.py`;
-- `concerts/migrations/0001_initial.py` (внешние ключи на три модели).
+- `concerts/migrations/0001_initial.py` (внешние ключи на три модели);
+- `concerts/migrations/0002_concert_status.py` (поле `status`);
+- `concerts/migrations/0003_migrate_concert_status.py`
+  (данные: `is_cancelled` -> `status`);
+- `concerts/migrations/0004_remove_concert_is_cancelled.py`
+  (удаление поля `is_cancelled`);
+- `venues/migrations/0002_venue_is_large_venue_slug.py`
+  (поля `slug` и `is_large`);
+- `venues/migrations/0003_fill_venue_slugs.py`
+  (данные: заполнение уникальных слагов);
+- `venues/migrations/0004_alter_venue_slug.py`
+  (уникальный индекс на `slug`).
 
 Команды:
 
@@ -132,7 +191,9 @@ python db/import_sqlite_to_orm.py  # перенос данных в таблиц
 обновляет совпадающие записи.
 
 Результат переноса: 12 исполнителей, 12 площадок, 12 программ,
-15 концертов.
+15 концертов. В рабочей базе `db.sqlite3` хранится именно этот
+датасет ПР9; расширенные JSON-источники (`data/*.json`, 159 концертов)
+используются только для наполнения временной тестовой базы.
 
 ## ORM-запросы в представлениях
 
@@ -169,8 +230,8 @@ SQL-запросов и чтения JSON в них больше нет. Исп�
 | `/concerts/statistics/` | статистика: агрегаты, группировка по статусу, по площадкам и исполнителям |
 | `/concerts/<id>/` | карточка концерта со связанными объектами и расчетами |
 | `/venues/` | список площадок: поиск по названию и городу, отбор по вместимости |
-| `/venues/available/` | свободные площадки на выбранную дату (отмененные концерты не учитываются) |
-| `/venues/<id>/` | площадка, связанные концерты, доступность на текущую дату |
+| `/venues/available/` | свободные площадки на выбранную дату (отмененные и завершенные концерты не учитываются) |
+| `/venues/<slug>/` | площадка, связанные концерты, доступность на текущую дату |
 | `/performers/` | список исполнителей: поиск по имени и жанру, число концертов |
 | `/performers/<id>/` | исполнитель, связанные концерты, суммарные показатели |
 | `/programs/` | список программ: поиск и отбор по возрастному ограничению |
@@ -224,18 +285,40 @@ python manage.py runserver
 таблицы создаются миграциями. Данные можно наполнить переносом из базы
 ПР7, через административную панель `/admin/` или Django shell.
 
+## Django Debug Toolbar
+
+Панель отладки подключена через `uv add django-debug-toolbar`
+(зафиксировано в `pyproject.toml`, `uv.lock` и `requirements.txt`):
+
+- приложение `debug_toolbar` добавлено в `INSTALLED_APPS`
+  (мидлвар панели бездействует при `DEBUG = False`, поэтому проект
+  не ломается в отключенном режиме отладки);
+- `debug_toolbar.middleware.DebugToolbarMiddleware` включен в
+  `MIDDLEWARE` сразу после `CommonMiddleware`;
+- `INTERNAL_IPS = ["127.0.0.1", "localhost"]` ограничивает показ
+  панели локальными запросами;
+- при `DEBUG = True` маршрут `__debug__/` подключается в
+  `concerty/urls.py` (`include(debug_toolbar.urls)`).
+
+При запуске `python manage.py runserver` панель выводится на каждой
+странице, история запросов доступна по адресу `/__debug__/`.
+
 ## Тесты
 
 ```bash
 pytest
 ```
 
-Тесты разделены по слоям:
+Всего 246 тестов. Тесты разделены по слоям:
 
 - `tests/test_orm.py` - модели, связи, CRUD-операции и ORM-запросы
   (фильтрация, поиск, сортировка, агрегирование, пагинация, PROTECT);
 - `tests/test_django_views.py` - страницы веб-интерфейса, фильтры,
   сортировка, пагинация, 404 и статистика;
+- `tests/test_pr10.py` - статусы и менеджер концертов, слаги и
+  `get_absolute_url()` площадок, GeneratedField `is_large`,
+  контекстный процессор и смоук-тесты административной панели
+  (списки, поиск, фильтры, инлайны концертов);
 - остальные файлы `tests/` - сохраненная логика ПР3-ПР7 (объектная
   модель, JSON-хранилище, консольное меню, SQLite-слой).
 

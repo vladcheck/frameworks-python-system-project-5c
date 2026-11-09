@@ -6,6 +6,7 @@
 """
 
 import os
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -19,6 +20,7 @@ django.setup()
 from django.conf import settings  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from django.db import connections  # noqa: E402
+from django.utils.text import slugify  # noqa: E402
 
 from concerts.models import Concert  # noqa: E402
 from performers.models import Performer  # noqa: E402
@@ -39,8 +41,33 @@ EXPECTED_COUNTS = {
     "performers": 12,
     "venues": 12,
     "programs": 12,
-    "concerts": 15,
+    "concerts": 159,
 }
+
+
+def _status_from_flag(item) -> str:
+    """Перевести признак отмены JSON в статус модели (как в миграции)."""
+    if item.is_cancelled:
+        return Concert.Status.CANCELLED
+    if item.date < date.today():
+        return Concert.Status.COMPLETED
+    return Concert.Status.SCHEDULED
+
+
+def _unique_slugs(names) -> list:
+    """Сгенерировать уникальные слаги для списка названий (как в save())."""
+    used = set()
+    slugs = []
+    for name in names:
+        base = slugify(name, allow_unicode=True) or "venue"
+        slug = base
+        suffix = 2
+        while slug in used:
+            slug = f"{base}-{suffix}"
+            suffix += 1
+        used.add(slug)
+        slugs.append(slug)
+    return slugs
 
 
 def _seed_database() -> None:
@@ -73,8 +100,9 @@ def _seed_database() -> None:
                 name=item.name,
                 city=item.city,
                 capacity=item.capacity,
+                slug=slug,
             )
-            for item in venues
+            for item, slug in zip(venues, _unique_slugs([v.name for v in venues]))
         ]
     )
     Program.objects.bulk_create(
@@ -99,7 +127,7 @@ def _seed_database() -> None:
                 date=item.date,
                 expected_guests=item.expected_guests,
                 base_ticket_price=Decimal(str(item.base_ticket_price)),
-                is_cancelled=item.is_cancelled,
+                status=_status_from_flag(item),
             )
             for item in concerts
         ]

@@ -1,6 +1,7 @@
 """Тесты Django-представлений через test Client на тестовой БД."""
 
 import re
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -19,14 +20,14 @@ LIST_PAGES = [
 
 DETAIL_PAGES = [
     ("/concerts/1/", "Клубный вечер с Мейби Бейби"),
-    ("/venues/1/", "Adrenaline Stadium"),
+    ("/venues/adrenaline-stadium/", "Adrenaline Stadium"),
     ("/performers/1/", "Мейби Бейби"),
     ("/programs/1/", "MAYDAY: клубный сет"),
 ]
 
 MISSING_PAGES = [
     "/concerts/999/",
-    "/venues/999/",
+    "/venues/no-such-venue/",
     "/performers/999/",
     "/programs/999/",
 ]
@@ -53,7 +54,25 @@ def cancelled_concert():
     try:
         yield concert
     finally:
-        Concert.objects.filter(pk=1).update(is_cancelled=False)
+        Concert.objects.filter(pk=1).update(status=Concert.Status.COMPLETED)
+
+
+@pytest.fixture
+def venue1_future_concert():
+    """Создать запланированный концерт на площадке 1 в далёком будущем."""
+    concert = Concert.objects.create(
+        title="Будущий тестовый концерт",
+        performer_id=1,
+        venue_id=1,
+        program_id=1,
+        date=date(2099, 3, 1),
+        expected_guests=100,
+        base_ticket_price=Decimal("1000.00"),
+    )
+    try:
+        yield concert
+    finally:
+        concert.delete()
 
 
 # --- Базовые страницы (сохранены из исходного набора тестов) ---
@@ -86,7 +105,7 @@ def test_detail_pages_ok():
 def test_detail_back_links():
     pairs = [
         ("/concerts/1/", "/concerts/"),
-        ("/venues/1/", "/venues/"),
+        ("/venues/adrenaline-stadium/", "/venues/"),
         ("/performers/1/", "/performers/"),
         ("/programs/1/", "/programs/"),
     ]
@@ -115,9 +134,9 @@ def test_custom_404_page():
 def test_concerts_list_default_order_and_pagination():
     response = client.get("/concerts/")
     assert response.status_code == 200
-    assert response.context["total_count"] == 15
+    assert response.context["total_count"] == 159
     assert response.context["page_obj"].number == 1
-    assert response.context["page_obj"].paginator.num_pages == 3
+    assert response.context["page_obj"].paginator.num_pages == 27
     # По умолчанию сортировка по дате, затем по pk.
     assert _concert_titles(response) == [
         "Свидание в Космонавте",
@@ -137,14 +156,13 @@ def test_concerts_pagination_second_page():
     assert len(second.context["page_obj"].object_list) == 6
     assert "Клубный вечер с Мейби Бейби" not in first
     assert "Клубный вечер с Мейби Бейби" in _content(second)
-    # Вторая страница в порядке даты: 15.10, 17.10, 22.10, 29.10, 05.11, 14.11.
     assert _concert_titles(second) == [
         "Клубный вечер с Мейби Бейби",
         "Аигел: трип-хоп сессия",
         "Дора: вечер инди",
         "Мейби Бейби в Питере",
-        "ЛСП: большой сольник",
-        "Мот: золотые хиты",
+        "Буерак: концерт 01.11",
+        "Мот: концерт 01.11",
     ]
 
 
@@ -153,9 +171,12 @@ def test_concerts_pagination_third_page():
     assert third.status_code == 200
     assert third.context["page_obj"].number == 3
     assert _concert_titles(third) == [
-        "Звери в Олимпийском",
-        "Аигел: ночной сет",
-        "Мумий Тролль: юбилейное шоу",
+        "Звери: концерт 01.11",
+        "Мумий Тролль: концерт 01.11",
+        "Пошлая Молли: концерт 02.11",
+        "Мот: концерт 02.11",
+        "ЛСП: концерт 02.11",
+        "Мукка: концерт 02.11",
     ]
 
 
@@ -177,30 +198,40 @@ def test_concerts_pagination_keeps_filters():
 
 
 @pytest.mark.parametrize(
-    ("query", "expected_titles"),
+    ("query", "expected_count", "page_titles"),
     [
         (
             "Мейби",
+            9,
             [
                 "Клубный вечер с Мейби Бейби",
                 "Мейби Бейби в Питере",
+                "Мейби Бейби: концерт 08.11",
+                "Мейби Бейби: концерт 09.11",
+                "Мейби Бейби: концерт 11.11",
+                "Мейби Бейби: концерт 26.11",
             ],
         ),
         (
             "Аигел",
+            12,
             [
                 "Аигел: трип-хоп сессия",
-                "Аигел: ночной сет",
+                "Аигел: концерт 07.11",
+                "Аигел: концерт 09.11",
+                "Аигел: концерт 12.11",
+                "Аигел: концерт 13.11",
+                "Аигел: концерт 16.11",
             ],
         ),
     ],
 )
-def test_concerts_search(query, expected_titles):
+def test_concerts_search(query, expected_count, page_titles):
     response = client.get("/concerts/", {"q": query})
     assert response.status_code == 200
     assert response.context["query"] == query
-    assert response.context["total_count"] == len(expected_titles)
-    assert sorted(_concert_titles(response)) == sorted(expected_titles)
+    assert response.context["total_count"] == expected_count
+    assert _concert_titles(response) == page_titles
 
 
 def test_concerts_search_without_results():
@@ -214,7 +245,7 @@ def test_concerts_filter_status_active():
     response = client.get("/concerts/", {"status": "active"})
     assert response.status_code == 200
     assert response.context["selected_status"] == "active"
-    assert response.context["total_count"] == 15
+    assert response.context["total_count"] == 99
     assert "Отменено" not in _content(response)
 
 
@@ -222,7 +253,7 @@ def test_concerts_filter_status_cancelled(cancelled_concert):
     response = client.get("/concerts/", {"status": "cancelled"})
     assert response.status_code == 200
     assert response.context["selected_status"] == "cancelled"
-    assert response.context["total_count"] == 1
+    assert response.context["total_count"] == 14
     content = _content(response)
     assert "Клубный вечер с Мейби Бейби" in content
     assert "Отменено" in content
@@ -232,18 +263,29 @@ def test_concerts_filter_by_venue():
     response = client.get("/concerts/", {"venue": "1"})
     assert response.status_code == 200
     assert response.context["selected_venue"] == "1"
-    assert response.context["total_count"] == 1
-    assert _concert_titles(response) == ["Клубный вечер с Мейби Бейби"]
+    assert response.context["total_count"] == 13
+    assert _concert_titles(response) == [
+        "Клубный вечер с Мейби Бейби",
+        "Буерак: концерт 01.11",
+        "ЛСП: концерт 03.11",
+        "Свидание: концерт 05.11",
+        "Звери: концерт 06.11",
+        "Мумий Тролль: концерт 08.11",
+    ]
 
 
 def test_concerts_filter_by_performer():
     response = client.get("/concerts/", {"performer": "1"})
     assert response.status_code == 200
     assert response.context["selected_performer"] == "1"
-    assert response.context["total_count"] == 2
-    assert sorted(_concert_titles(response)) == [
+    assert response.context["total_count"] == 9
+    assert _concert_titles(response) == [
         "Клубный вечер с Мейби Бейби",
         "Мейби Бейби в Питере",
+        "Мейби Бейби: концерт 08.11",
+        "Мейби Бейби: концерт 09.11",
+        "Мейби Бейби: концерт 11.11",
+        "Мейби Бейби: концерт 26.11",
     ]
 
 
@@ -253,27 +295,26 @@ def test_concerts_sort_by_venue():
     assert response.context["sort"] == "venue"
     assert _concert_titles(response) == [
         "Буерак: пост-панк ночь",
-        "Дора: вечер инди",
-        "Мейби Бейби в Питере",
-        "Клубный вечер с Мейби Бейби",
-        "Пошлая Молли: панк-вечеринка",
-        "Мот: золотые хиты",
+        "Буерак: концерт 21.11",
+        "Пошлая Молли: концерт 04.11",
+        "Дора: концерт 03.11",
+        "Пошлая Молли: концерт 23.11",
+        "Аигел: концерт 09.11",
     ]
 
 
 def test_concerts_date_from_filter():
     response = client.get("/concerts/", {"date_from": "2026-11-01"})
     assert response.status_code == 200
-    assert response.context["total_count"] == 5
-    assert sorted(_concert_titles(response)) == sorted(
-        [
-            "ЛСП: большой сольник",
-            "Мот: золотые хиты",
-            "Звери в Олимпийском",
-            "Мумий Тролль: юбилейное шоу",
-            "Аигел: ночной сет",
-        ]
-    )
+    assert response.context["total_count"] == 149
+    assert _concert_titles(response) == [
+        "Буерак: концерт 01.11",
+        "Мот: концерт 01.11",
+        "Звери: концерт 01.11",
+        "Мумий Тролль: концерт 01.11",
+        "Пошлая Молли: концерт 02.11",
+        "Мот: концерт 02.11",
+    ]
     assert "Клубный вечер с Мейби Бейби" not in _content(response)
 
 
@@ -285,7 +326,7 @@ def test_concerts_invalid_date_from_shows_error():
     )
     assert "Укажите корректную дату" in _content(response)
     # Некорректная дата не должна отбрасывать остальные концерты.
-    assert response.context["total_count"] == 15
+    assert response.context["total_count"] == 159
 
 
 # --- Статистика ---
@@ -298,43 +339,56 @@ def test_statistics_page_aggregates():
     assert "Статистика концертов" in content
 
     overall = response.context["overall"]
-    assert overall["total"] == 15
-    assert overall["guests"] == 93000
-    assert overall["min_price"] == Decimal("1100")
+    assert overall["total"] == 159
+    assert overall["guests"] == 510063
+    assert overall["min_price"] == Decimal("10.50")
     assert overall["max_price"] == Decimal("2500")
-    assert '<p class="display-6">15</p>' in content
-    assert '<p class="display-6">93000</p>' in content
+    assert '<p class="display-6">159</p>' in content
+    assert '<p class="display-6">510063</p>' in content
 
-    by_status = list(response.context["by_status"])
-    assert len(by_status) == 1
-    assert by_status[0]["is_cancelled"] is False
-    assert by_status[0]["count"] == 15
-    assert by_status[0]["guests"] == 93000
-    assert "Активные" in content
+    status_counts = response.context["status_counts"]
+    assert status_counts == {
+        "scheduled": 99,
+        "cancelled": 13,
+        "completed": 47,
+    }
+
+    by_status = {row["status"]: row for row in response.context["by_status"]}
+    assert set(by_status) == {
+        Concert.Status.SCHEDULED,
+        Concert.Status.CANCELLED,
+        Concert.Status.COMPLETED,
+    }
+    assert by_status[Concert.Status.SCHEDULED]["count"] == 99
+    assert by_status[Concert.Status.CANCELLED]["count"] == 13
+    assert by_status[Concert.Status.COMPLETED]["count"] == 47
+    assert "Запланированные" in content
+    assert "Завершённые" in content
+    assert "Отменённые" in content
 
     venue_stats = response.context["venue_stats"]
     busy_venue = venue_stats.get(pk=1)
-    assert busy_venue.total_count == 1
-    assert busy_venue.active_count == 1
-    assert busy_venue.guests == 4800
+    assert busy_venue.total_count == 13
+    assert busy_venue.active_count == 6
+    assert busy_venue.guests == 13744
     empty_venue = venue_stats.get(pk=12)
-    assert empty_venue.total_count == 0
-    assert empty_venue.active_count == 0
+    assert empty_venue.total_count == 12
+    assert empty_venue.active_count == 8
 
     performer_stats = list(response.context["performer_stats"])
     assert len(performer_stats) == 5
-    assert [item.concerts_count for item in performer_stats[:3]] == [2, 2, 2]
+    assert [item.concerts_count for item in performer_stats[:3]] == [19, 18, 17]
     assert "Ведущие исполнители по числу концертов" in content
 
 
 # --- Свободные площадки ---
 
 
-def test_available_venues_excludes_busy_venue():
-    response = client.get("/venues/available/", {"date": "2026-10-15"})
+def test_available_venues_excludes_busy_venue(venue1_future_concert):
+    response = client.get("/venues/available/", {"date": "2099-03-01"})
     assert response.status_code == 200
     content = _content(response)
-    assert "Дата: 2026-10-15" in content
+    assert "Дата: 2099-03-01" in content
     assert "Adrenaline Stadium" not in content
     assert "Главclub Green Concert" in content
     assert response.context["venues"].count() == 11
@@ -354,8 +408,18 @@ def test_available_venues_without_date():
     assert response.context["venues"].count() == 0
 
 
-def test_available_venues_ignores_cancelled_concert(cancelled_concert):
-    response = client.get("/venues/available/", {"date": "2026-10-15"})
+def test_available_venues_ignores_cancelled_concert(venue1_future_concert):
+    venue1_future_concert.cancel()
+    response = client.get("/venues/available/", {"date": "2099-03-01"})
+    assert response.status_code == 200
+    assert "Adrenaline Stadium" in _content(response)
+    assert response.context["venues"].count() == 12
+
+
+def test_available_venues_ignores_completed_concert(venue1_future_concert):
+    venue1_future_concert.status = Concert.Status.COMPLETED
+    venue1_future_concert.save(update_fields=["status"])
+    response = client.get("/venues/available/", {"date": "2099-03-01"})
     assert response.status_code == 200
     assert "Adrenaline Stadium" in _content(response)
     assert response.context["venues"].count() == 12
