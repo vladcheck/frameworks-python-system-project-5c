@@ -20,10 +20,10 @@ SORT_FIELDS = {
     "performer": "performer__name",
 }
 
-# Белый список фильтров по статусу концерта.
+# Белый список фильтров по статусу концерта: URL -> константа модели.
 STATUS_FILTERS = {
-    "active": False,
-    "cancelled": True,
+    "active": Concert.Status.SCHEDULED,
+    "cancelled": Concert.Status.CANCELLED,
 }
 
 PAGE_SIZE = 6
@@ -63,7 +63,7 @@ def concerts(request: HttpRequest):
     if performer_id.isdigit():
         concerts_qs = concerts_qs.filter(performer_id=int(performer_id))
     if status in STATUS_FILTERS:
-        concerts_qs = concerts_qs.filter(is_cancelled=STATUS_FILTERS[status])
+        concerts_qs = concerts_qs.filter(status=STATUS_FILTERS[status])
     if date_from:
         parsed_date = _parse_date(date_from)
         if parsed_date is None:
@@ -114,7 +114,7 @@ def concert_detail(request: HttpRequest, concert_id: int):
     context = {
         "concert": concert,
         "today": today,
-        "status": concert.get_status(today),
+        "status": concert.get_status_display(),
         "ticket_price": concert.calculate_ticket_price(),
         "revenue": concert.calculate_revenue(),
         "venue_fit": concert.check_venue_fit(),
@@ -135,11 +135,18 @@ def statistics(request: HttpRequest):
         avg_price=Avg("base_ticket_price"),
     )
 
-    # Группировка по признаку отмены через values() и annotate().
+    # Число концертов каждого статуса через Count с условиями Q.
+    status_counts = Concert.objects.aggregate(
+        scheduled=Count("pk", filter=Q(status=Concert.Status.SCHEDULED)),
+        cancelled=Count("pk", filter=Q(status=Concert.Status.CANCELLED)),
+        completed=Count("pk", filter=Q(status=Concert.Status.COMPLETED)),
+    )
+
+    # Группировка по статусу через values() и annotate().
     by_status = (
-        Concert.objects.values("is_cancelled")
+        Concert.objects.values("status")
         .annotate(count=Count("pk"), guests=Sum("expected_guests"))
-        .order_by("is_cancelled")
+        .order_by("status")
     )
 
     # Статистика по площадкам: все площадки, включая пустые.
@@ -148,11 +155,11 @@ def statistics(request: HttpRequest):
             total_count=Count("concerts"),
             active_count=Count(
                 "concerts",
-                filter=Q(concerts__is_cancelled=False),
+                filter=Q(concerts__status=Concert.Status.SCHEDULED),
             ),
             guests=Sum(
                 "concerts__expected_guests",
-                filter=Q(concerts__is_cancelled=False),
+                filter=Q(concerts__status=Concert.Status.SCHEDULED),
             ),
         )
         .order_by("-total_count", "name")
@@ -170,12 +177,13 @@ def statistics(request: HttpRequest):
 
     upcoming = Concert.objects.filter(
         date__gte=today,
-        is_cancelled=False,
+        status=Concert.Status.SCHEDULED,
     ).count()
 
     context = {
         "today": today,
         "overall": overall,
+        "status_counts": status_counts,
         "by_status": by_status,
         "venue_stats": venue_stats,
         "performer_stats": performer_stats,

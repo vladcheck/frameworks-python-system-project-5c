@@ -45,7 +45,15 @@
     <tbody>
         {% for row in by_status %}
         <tr>
-            <td>{% if row.is_cancelled %}Отменённые{% else %}Активные{% endif %}</td>
+            <td>
+                {% if row.status == "CANCELLED" %}
+                Отменённые
+                {% elif row.status == "COMPLETED" %}
+                Завершённые
+                {% else %}
+                Запланированные
+                {% endif %}
+            </td>
             <td>{{ row.count }}</td>
             <td>{{ row.guests|default:0 }}</td>
         </tr>

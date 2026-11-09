@@ -3,6 +3,6 @@
     <h5 class="card-title">{{ venue.name|default:"Без названия" }}</h5>
     <p class="card-text">{{ venue.city }} — {{ venue.capacity }} мест</p>
     <p class="card-text mb-2">Концертов: {{ venue.concert_count }}</p>
-    <a href="{% url 'venues:venue_detail' venue.id %}">Подробнее</a>
+    <a href="{{ venue.get_absolute_url }}">Подробнее</a>
   </div>
 </article>

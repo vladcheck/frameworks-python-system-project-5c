@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+# Адреса, с которых Django Debug Toolbar показывает свою панель.
+INTERNAL_IPS = ["127.0.0.1", "localhost"]
+
 
 # Application definition
 
@@ -37,17 +40,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "homepage",
-    "performers",
-    "programs",
-    "venues",
-    "concerts",
+    "homepage.apps.HomepageConfig",
+    "performers.apps.PerformersConfig",
+    "programs.apps.ProgramsConfig",
+    "venues.apps.VenuesConfig",
+    "concerts.apps.ConcertsConfig",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -66,6 +71,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "concerts.context_processors.concert_context",
             ],
         },
     },

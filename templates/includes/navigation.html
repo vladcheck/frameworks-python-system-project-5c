@@ -4,6 +4,6 @@
     <a class="nav-link" href="{% url 'venues:available' %}">Свободные площадки</a>
     <a class="nav-link" href="{% url 'performers:performers' %}">Исполнители</a>
     <a class="nav-link" href="{% url 'programs:programs' %}">Программы</a>
-    <a class="nav-link" href="{% url 'concerts:concerts' %}">Концерты</a>
+    <a class="nav-link" href="{% url 'concerts:concerts' %}">Концерты ({{ concerts_count }})</a>
     <a class="nav-link" href="{% url 'concerts:statistics' %}">Статистика</a>
 </nav>

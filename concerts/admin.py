@@ -15,9 +15,14 @@ class ConcertAdmin(admin.ModelAdmin):
         "date",
         "performer",
         "venue",
-        "is_cancelled",
+        "status",
     )
-    list_filter = ("is_cancelled", "date", "venue")
+    list_display_links = ("title",)
+    list_filter = ("status", "date", "venue")
     search_fields = ("title", "performer__name", "venue__name")
     # Связанные объекты загружаются одним запросом.
     list_select_related = ("performer", "venue", "program")
+    # Иерархия по дате в правой колонке списка.
+    date_hierarchy = "date"
+    ordering = ("date", "pk")
+    list_per_page = 20

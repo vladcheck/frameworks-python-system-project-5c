@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from concerty import settings
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("homepage.urls")),
@@ -25,5 +27,12 @@ urlpatterns = [
     path("performers/", include("performers.urls")),
     path("programs/", include("programs.urls")),
 ]
+
+if settings.DEBUG:
+    import debug_toolbar
+
+    urlpatterns = [
+        path("__debug__/", include(debug_toolbar.urls)),
+    ] + urlpatterns
 
 handler404 = "homepage.views.page_not_found"

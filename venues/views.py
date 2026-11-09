@@ -43,19 +43,19 @@ def venues(request: HttpRequest):
     return render(request, "venues/venue_list.html", context)
 
 
-def venue_detail(request: HttpRequest, venue_id: int):
+def venue_detail(request: HttpRequest, slug: str):
     """Показать площадку, её концерты и доступность на текущую дату."""
-    venue = get_object_or_404(Venue, pk=venue_id)
+    venue = get_object_or_404(Venue, slug=slug)
 
     # Связанные концерты через обратную связь и select_related().
     related = venue.concerts.select_related(
         "performer", "program"
     ).order_by("date")
 
-    # Отменённые концерты площадку не блокируют.
+    # Отменённые и завершённые концерты площадку не блокируют.
     busy_today = venue.concerts.filter(
         date=date.today(),
-        is_cancelled=False,
+        status=Concert.Status.SCHEDULED,
     ).exists()
 
     context = {
@@ -78,10 +78,10 @@ def available_venues(request: HttpRequest):
         if selected_date is None:
             error = "Укажите корректную дату."
         else:
-            # Идентификаторы площадок с активными концертами на дату.
+            # Идентификаторы площадок с запланированными концертами на дату.
             booked_venue_ids = Concert.objects.filter(
                 date=selected_date,
-                is_cancelled=False,
+                status=Concert.Status.SCHEDULED,
             ).values_list("venue_id", flat=True)
             # exclude() убирает занятые площадки из общего списка.
             venues_list = Venue.objects.exclude(
