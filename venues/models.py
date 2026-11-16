@@ -32,6 +32,12 @@ class Venue(models.Model):
         db_persist=True,
         verbose_name="Большая площадка",
     )
+    image = models.ImageField(
+        upload_to="venues/",
+        blank=True,
+        null=True,
+        verbose_name="Изображение",
+    )
 
     class Meta:
         # Сортировка по названию по умолчанию.

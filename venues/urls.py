@@ -23,6 +23,7 @@ app_name = "venues"
 urlpatterns = [
     path("", views.venues, name="venues"),
     # Статический маршрут объявлен раньше динамического.
+    path("create/", views.venue_create, name="venue_create"),
     path("available/", views.available_venues, name="available"),
     path("<uslug:slug>/", views.venue_detail, name="venue_detail"),
 ]

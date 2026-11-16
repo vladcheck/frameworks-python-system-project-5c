@@ -4,10 +4,11 @@ from datetime import date, datetime
 
 from django.db.models import Count, Q
 from django.http import HttpRequest
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from concerts.models import Concert
 
+from .forms import VenueForm
 from .models import Venue
 
 
@@ -65,6 +66,19 @@ def venue_detail(request: HttpRequest, slug: str):
         "status_text": "занята" if busy_today else "свободна",
     }
     return render(request, "venues/venue_detail.html", context)
+
+
+def venue_create(request: HttpRequest):
+    """Создать новую площадку (включая загрузку изображения)."""
+    if request.method == "POST":
+        # request.FILES обязателен для полей загрузки файлов.
+        form = VenueForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect("venues:venues")
+    else:
+        form = VenueForm()
+    return render(request, "venues/venue_form.html", {"form": form})
 
 
 def available_venues(request: HttpRequest):

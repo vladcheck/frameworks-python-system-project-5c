@@ -6,74 +6,57 @@
 <h1>Концерты</h1>
 <p>Всего концертов по выбранным условиям: {{ total_count }}</p>
 
+<p><a href="{% url 'concerts:concert_create' %}" class="btn btn-success">Создать концерт</a></p>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
 <form method="get" class="mb-4">
     <div class="row g-3 align-items-end">
         <div class="col-md-3">
-            <label for="q" class="form-label">Поиск</label>
-            <input
-                type="text"
-                id="q"
-                name="q"
-                class="form-control"
-                value="{{ query }}"
-                placeholder="Название концерта или исполнитель"
-            >
+            {{ form.q.label_tag }}
+            {{ form.q }}
+            {% for error in form.q.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
         <div class="col-md-2">
-            <label for="venue" class="form-label">Площадка</label>
-            <select id="venue" name="venue" class="form-select">
-                <option value="">Все площадки</option>
-                {% for venue in venues %}
-                <option value="{{ venue.pk }}"
-                    {% if selected_venue == venue.pk|stringformat:"s" %}selected{% endif %}>
-                    {{ venue.name }}
-                </option>
-                {% endfor %}
-            </select>
+            {{ form.venue.label_tag }}
+            {{ form.venue }}
+            {% for error in form.venue.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
         <div class="col-md-2">
-            <label for="performer" class="form-label">Исполнитель</label>
-            <select id="performer" name="performer" class="form-select">
-                <option value="">Все исполнители</option>
-                {% for performer in performers %}
-                <option value="{{ performer.pk }}"
-                    {% if selected_performer == performer.pk|stringformat:"s" %}selected{% endif %}>
-                    {{ performer.name }}
-                </option>
-                {% endfor %}
-            </select>
+            {{ form.performer.label_tag }}
+            {{ form.performer }}
+            {% for error in form.performer.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
         <div class="col-md-2">
-            <label for="status" class="form-label">Статус</label>
-            <select id="status" name="status" class="form-select">
-                {% for value, label in status_choices %}
-                <option value="{{ value }}"
-                    {% if selected_status == value %}selected{% endif %}>
-                    {{ label }}
-                </option>
-                {% endfor %}
-            </select>
+            {{ form.status.label_tag }}
+            {{ form.status }}
+            {% for error in form.status.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
         <div class="col-md-3">
-            <label for="date_from" class="form-label">Дата с</label>
-            <input
-                type="date"
-                id="date_from"
-                name="date_from"
-                class="form-control"
-                value="{{ date_from }}"
-            >
+            {{ form.date_from.label_tag }}
+            {{ form.date_from }}
+            {% for error in form.date_from.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
     </div>
     <div class="row g-3 mt-1 align-items-end">
         <div class="col-md-3">
-            <label for="sort" class="form-label">Сортировать по</label>
-            <select id="sort" name="sort" class="form-select">
-                <option value="date" {% if sort == "date" %}selected{% endif %}>Дате</option>
-                <option value="title" {% if sort == "title" %}selected{% endif %}>Названию</option>
-                <option value="venue" {% if sort == "venue" %}selected{% endif %}>Площадке</option>
-                <option value="performer" {% if sort == "performer" %}selected{% endif %}>Исполнителю</option>
-            </select>
+            {{ form.sort.label_tag }}
+            {{ form.sort }}
+            {% for error in form.sort.errors %}
+            <div class="text-danger form-error">{{ error }}</div>
+            {% endfor %}
         </div>
         <div class="col-md-3">
             <button type="submit" class="btn btn-primary">Найти</button>
@@ -81,10 +64,6 @@
         </div>
     </div>
 </form>
-
-{% if error %}
-<p class="text-danger">{{ error }}</p>
-{% endif %}
 
 {% for concert in concerts %}
 {% include "concerts/includes/concert_card.html" %}

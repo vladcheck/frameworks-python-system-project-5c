@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Добавление площадки – Concerty{% endblock %}
+
+{% block content %}
+<h1>Добавление площадки</h1>
+
+<form method="post" enctype="multipart/form-data" class="mb-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="mb-3">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+        <div class="form-text">{{ field.help_text }}</div>
+        {% endif %}
+        {% for error in field.errors %}
+        <div class="text-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{% url 'venues:venues' %}" class="btn btn-outline-secondary">Отмена</a>
+</form>
+{% endblock %}

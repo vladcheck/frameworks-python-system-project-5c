@@ -262,7 +262,9 @@ def test_concerts_filter_status_cancelled(cancelled_concert):
 def test_concerts_filter_by_venue():
     response = client.get("/concerts/", {"venue": "1"})
     assert response.status_code == 200
-    assert response.context["selected_venue"] == "1"
+    # ПР11: значение приходит из cleaned_data ModelChoiceField (объект,
+    # в контекст передаётся его первичный ключ), а не сырая строка GET.
+    assert response.context["selected_venue"] == 1
     assert response.context["total_count"] == 13
     assert _concert_titles(response) == [
         "Клубный вечер с Мейби Бейби",
@@ -277,7 +279,8 @@ def test_concerts_filter_by_venue():
 def test_concerts_filter_by_performer():
     response = client.get("/concerts/", {"performer": "1"})
     assert response.status_code == 200
-    assert response.context["selected_performer"] == "1"
+    # ПР11: значение из cleaned_data ModelChoiceField (int pk объекта).
+    assert response.context["selected_performer"] == 1
     assert response.context["total_count"] == 9
     assert _concert_titles(response) == [
         "Клубный вечер с Мейби Бейби",
@@ -321,10 +324,13 @@ def test_concerts_date_from_filter():
 def test_concerts_invalid_date_from_shows_error():
     response = client.get("/concerts/", {"date_from": "31-12-2026"})
     assert response.status_code == 200
+    # ПР11: дата валидируется формой ConcertFilterForm; при ошибке
+    # выводится общее сообщение формы и ошибка поля date_from.
     assert response.context["error"] == (
-        "Укажите корректную дату в формате ГГГГ-ММ-ДД."
+        "Проверьте введённые значения фильтров."
     )
-    assert "Укажите корректную дату" in _content(response)
+    assert "Проверьте введённые значения фильтров." in _content(response)
+    assert "Введите правильную дату." in _content(response)
     # Некорректная дата не должна отбрасывать остальные концерты.
     assert response.context["total_count"] == 159
 

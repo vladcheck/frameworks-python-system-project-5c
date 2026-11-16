@@ -1,15 +1,18 @@
-"""Представления приложения concerts: ORM, фильтры, сортировка, пагинация."""
+"""Представления приложения concerts: ORM, формы, фильтры, пагинация."""
 
-from datetime import date, datetime
+from datetime import date
 
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Max, Min, Q, Sum
 from django.http import HttpRequest
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from performers.models import Performer
 from venues.models import Venue
 
+from .forms import ConcertFilterForm, ConcertForm
 from .models import Concert
 
 # Белый список параметров сортировки: URL -> поле модели.
@@ -29,22 +32,11 @@ STATUS_FILTERS = {
 PAGE_SIZE = 6
 
 
-def _parse_date(value: str):
-    """Преобразовать строку ГГГГ-ММ-ДД в объект date или вернуть None."""
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
-    except ValueError:
-        return None
-
-
 def concerts(request: HttpRequest):
     """Показать список концертов с поиском, фильтрами, сортировкой и страницами."""
-    query = request.GET.get("q", "").strip()
-    venue_id = request.GET.get("venue", "").strip()
-    performer_id = request.GET.get("performer", "").strip()
-    status = request.GET.get("status", "").strip()
-    date_from = request.GET.get("date_from", "").strip()
-    sort = request.GET.get("sort", "date")
+    form = ConcertFilterForm(request.GET or None)
+    # Однократная валидация: значения берутся только из cleaned_data.
+    form_valid = form.is_bound and form.is_valid()
     error = None
 
     # select_related() загружает связанные объекты одним запросом.
@@ -52,24 +44,38 @@ def concerts(request: HttpRequest):
         "performer", "venue", "program"
     )
 
-    if query:
-        # Поиск по названию концерта и по имени связанного исполнителя.
-        concerts_qs = concerts_qs.filter(
-            Q(title__icontains=query) | Q(performer__name__icontains=query)
-        )
-    if venue_id.isdigit():
-        # Фильтрация по полю связанной модели (внешний ключ).
-        concerts_qs = concerts_qs.filter(venue_id=int(venue_id))
-    if performer_id.isdigit():
-        concerts_qs = concerts_qs.filter(performer_id=int(performer_id))
-    if status in STATUS_FILTERS:
-        concerts_qs = concerts_qs.filter(status=STATUS_FILTERS[status])
-    if date_from:
-        parsed_date = _parse_date(date_from)
-        if parsed_date is None:
-            error = "Укажите корректную дату в формате ГГГГ-ММ-ДД."
-        else:
-            concerts_qs = concerts_qs.filter(date__gte=parsed_date)
+    if form_valid:
+        query = form.cleaned_data.get("q") or ""
+        venue = form.cleaned_data.get("venue")
+        performer = form.cleaned_data.get("performer")
+        status = form.cleaned_data.get("status") or ""
+        date_from = form.cleaned_data.get("date_from")
+        sort = form.cleaned_data.get("sort") or "date"
+
+        if query:
+            # Поиск по названию концерта и по имени связанного исполнителя.
+            concerts_qs = concerts_qs.filter(
+                Q(title__icontains=query) | Q(performer__name__icontains=query)
+            )
+        if venue is not None:
+            # Фильтрация по полю связанной модели (внешний ключ).
+            concerts_qs = concerts_qs.filter(venue=venue)
+        if performer is not None:
+            concerts_qs = concerts_qs.filter(performer=performer)
+        if status in STATUS_FILTERS:
+            concerts_qs = concerts_qs.filter(status=STATUS_FILTERS[status])
+        if date_from is not None:
+            concerts_qs = concerts_qs.filter(date__gte=date_from)
+    else:
+        query = ""
+        venue = None
+        performer = None
+        status = ""
+        date_from = None
+        sort = "date"
+        if form.is_bound:
+            # Форма отправлена, но не прошла валидацию.
+            error = "Проверьте введённые значения фильтров."
 
     # Поле сортировки берётся из белого списка, а не из запроса напрямую.
     sort_field = SORT_FIELDS.get(sort, "date")
@@ -84,10 +90,10 @@ def concerts(request: HttpRequest):
         "page_obj": page_obj,
         "today": date.today(),
         "query": query,
-        "selected_venue": venue_id,
-        "selected_performer": performer_id,
+        "selected_venue": venue.pk if venue is not None else "",
+        "selected_performer": performer.pk if performer is not None else "",
         "selected_status": status,
-        "date_from": date_from,
+        "date_from": date_from.isoformat() if date_from is not None else "",
         "sort": sort,
         "venues": Venue.objects.order_by("name"),
         "performers": Performer.objects.order_by("name"),
@@ -98,8 +104,81 @@ def concerts(request: HttpRequest):
         ],
         "total_count": paginator.count,
         "error": error,
+        "form": form,
     }
     return render(request, "concerts/concert_list.html", context)
+
+
+def concert_create(request: HttpRequest):
+    """Создать новый концерт: форма с проверкой занятости площадки."""
+    if request.method == "POST":
+        form = ConcertForm(request.POST)
+        if form.is_valid():
+            concert = form.save(commit=False)
+            occupied = Concert.objects.scheduled().filter(
+                venue=concert.venue,
+                date=concert.date,
+            ).exists()
+            if occupied:
+                form.add_error(
+                    None,
+                    "Выбранная площадка уже занята на эту дату.",
+                )
+            else:
+                form.save()
+                return redirect("concerts:concerts")
+    else:
+        # Новый концерт по умолчанию планируется на сегодня.
+        form = ConcertForm(initial={"date": timezone.localdate()})
+    return render(
+        request,
+        "concerts/concert_form.html",
+        {"form": form},
+    )
+
+
+def concert_update(request: HttpRequest, concert_id: int):
+    """Отредактировать запланированный концерт (404 для остальных статусов)."""
+    concert = get_object_or_404(
+        Concert.objects.scheduled(),
+        pk=concert_id,
+    )
+    if request.method == "POST":
+        form = ConcertForm(request.POST, instance=concert)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            occupied = (
+                Concert.objects.scheduled()
+                .filter(venue=updated.venue, date=updated.date)
+                .exclude(pk=concert.pk)
+                .exists()
+            )
+            if occupied:
+                form.add_error(
+                    None,
+                    "Выбранная площадка уже занята на эту дату.",
+                )
+            else:
+                form.save()
+                return redirect("concerts:concerts")
+    else:
+        form = ConcertForm(instance=concert)
+    return render(
+        request,
+        "concerts/concert_form.html",
+        {"form": form, "concert": concert},
+    )
+
+
+@require_POST
+def concert_cancel(request: HttpRequest, concert_id: int):
+    """Отменить запланированный концерт (только POST-запрос)."""
+    concert = get_object_or_404(
+        Concert.objects.scheduled(),
+        pk=concert_id,
+    )
+    concert.cancel()
+    return redirect("concerts:concerts")
 
 
 def concert_detail(request: HttpRequest, concert_id: int):

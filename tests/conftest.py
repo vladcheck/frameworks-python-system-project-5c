@@ -18,6 +18,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concerty.settings")
 django.setup()
 
 from django.conf import settings  # noqa: E402
+from django.conf import settings as django_settings  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from django.db import connections  # noqa: E402
 from django.utils.text import slugify  # noqa: E402
@@ -161,3 +162,13 @@ def django_test_database(tmp_path_factory):
     finally:
         connections.close_all()
         teardown_test_environment()
+
+
+@pytest.fixture(name="settings")
+def _settings_fixture():
+    """Объект настроек Django для тестов (аналог фикстуры pytest-django).
+
+    Позволяет тестам переназначать настройки на время теста, например
+    MEDIA_ROOT для загрузки файлов во временный каталог.
+    """
+    return django_settings

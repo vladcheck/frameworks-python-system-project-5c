@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{% if concert %}Редактирование концерта{% else %}Создание концерта{% endif %} – Concerty{% endblock %}
+
+{% block content %}
+<h1>{% if concert %}Редактирование концерта{% else %}Создание концерта{% endif %}</h1>
+
+<form method="post" class="mb-4">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+        <p class="mb-0">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% for field in form %}
+    <div class="mb-3">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+        <div class="form-text">{{ field.help_text }}</div>
+        {% endif %}
+        {% for error in field.errors %}
+        <div class="text-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">
+        {% if concert %}Сохранить изменения{% else %}Создать концерт{% endif %}
+    </button>
+    <a href="{% url 'concerts:concerts' %}" class="btn btn-outline-secondary">Отмена</a>
+</form>
+{% endblock %}

@@ -6,5 +6,12 @@
         <p class="card-text">Площадка: {{ concert.venue.name }}</p>
         {% include "concerts/includes/concert_status.html" %}
         <a href="{% url 'concerts:concert_detail' concert.id %}" class="btn btn-primary">Подробнее</a>
+        {% if concert.status == "SCHEDULED" %}
+        <a href="{% url 'concerts:concert_update' concert.id %}" class="btn btn-warning">Редактировать</a>
+        <form method="post" action="{% url 'concerts:concert_cancel' concert.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Отменить</button>
+        </form>
+        {% endif %}
     </div>
 </article>
