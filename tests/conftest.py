@@ -46,11 +46,18 @@ EXPECTED_COUNTS = {
 }
 
 
+# Фиксированная референсная дата для сида: даты в data/*.json заданы в 2026 г.,
+# и статусы выводятся относительно «сегодня». Чтобы распределение статусов
+# не дрейфовало с течением реального времени, сравниваем с этой константой
+# (момент написания данных: сразу после основной массы концертов).
+SEED_TODAY = date(2026, 11, 9)
+
+
 def _status_from_flag(item) -> str:
     """Перевести признак отмены JSON в статус модели (как в миграции)."""
     if item.is_cancelled:
         return Concert.Status.CANCELLED
-    if item.date < date.today():
+    if item.date < SEED_TODAY:
         return Concert.Status.COMPLETED
     return Concert.Status.SCHEDULED
 
